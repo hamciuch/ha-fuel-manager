@@ -231,15 +231,32 @@ def _notify_update(hass: HomeAssistant, entry_id: str) -> None:
 
 
 def _path_allowed(hass: HomeAssistant, path: str) -> bool:
-    """Dozwolone: allowlist_external_dirs LUB katalog konfiguracyjny HA (/config)."""
+    """Czy ścieżka jest dozwolona do odczytu/zapisu.
+
+    Dozwolone:
+      * allowlist_external_dirs (standardowe is_allowed_path),
+      * katalog konfiguracyjny HA (/config, na HAOS też /homeassistant),
+      * katalogi media (/media) – wygodne na HAOS (upload z panelu Media).
+    Symlinki są rozwiązywane (realpath), więc działa niezależnie od montowań HAOS.
+    """
     if hass.config.is_allowed_path(path):
         return True
-    abspath = os.path.abspath(path)
-    config_dir = os.path.abspath(hass.config.config_dir)
+    real = os.path.realpath(path)
+    roots: list[str] = [hass.config.config_dir]
     try:
-        return os.path.commonpath([abspath, config_dir]) == config_dir
-    except ValueError:
-        return False
+        roots.extend(hass.config.media_dirs.values())
+    except AttributeError:
+        pass
+    for root in roots:
+        if not root:
+            continue
+        root_real = os.path.realpath(root)
+        try:
+            if os.path.commonpath([real, root_real]) == root_real:
+                return True
+        except ValueError:
+            continue
+    return False
 
 
 # ---- Handlery serwisów ----------------------------------------------------
@@ -320,7 +337,7 @@ def _register_services(hass: HomeAssistant) -> None:
             if not _path_allowed(hass, path):
                 raise HomeAssistantError(
                     f"Ścieżka '{path}' nie jest dozwolona. Użyj pliku w /config "
-                    "albo dodaj katalog do allowlist_external_dirs."
+                    "lub /media, albo dodaj katalog do allowlist_external_dirs."
                 )
 
             def _read() -> str:

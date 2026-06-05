@@ -105,9 +105,12 @@ data:
   file_path: /config/fuelio/car5-20260427-105230.csv
 ```
 
-Plik z katalogu `/config` (lub podkatalogu) działa bez dodatkowej konfiguracji.
-Inne lokalizacje wymagają wpisu w `allowlist_external_dirs`. Możesz też pominąć
-plik i wkleić całą zawartość CSV w polu `content`. Import jest idempotentny (po GUID).
+Działa bez dodatkowej konfiguracji plik z `/config` (np. `/config/car5.csv`,
+wrzucony dodatkiem File editor / Samba / Studio Code Server), z `/config/www`
+(czyli `/local/...`) oraz z `/media` (na HAOS możesz go wgrać wprost z panelu
+*Media*, nawet z telefonu, i podać `file_path: /media/car5.csv`). Inne lokalizacje
+wymagają wpisu w `allowlist_external_dirs`. Możesz też pominąć plik i wkleić całą
+zawartość CSV w polu `content`. Import jest idempotentny (po GUID).
 
 ## ⛽ Kody rodzaju paliwa (Fuelio)
 
