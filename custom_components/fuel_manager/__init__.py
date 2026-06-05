@@ -22,6 +22,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import (
     CONF_DEVICE_TRACKER,
+    CONF_PHONE_TRACKER,
     CONF_STATION_RADIUS,
     CONF_USE_OVERPASS,
     DEFAULT_OVERPASS_RADIUS,
@@ -62,8 +63,10 @@ ADD_SCHEMA = vol.Schema(
         vol.Optional("station_id"): vol.Coerce(int),
         vol.Optional("latitude"): vol.Coerce(float),
         vol.Optional("longitude"): vol.Coerce(float),
+        vol.Optional("location_entity"): cv.entity_id,
         vol.Optional("notes"): cv.string,
-        vol.Optional("use_car_location", default=True): cv.boolean,
+        vol.Optional("use_phone_location", default=True): cv.boolean,
+        vol.Optional("use_car_location", default=False): cv.boolean,
     }
 )
 
@@ -99,6 +102,9 @@ FIND_SCHEMA = vol.Schema(
         **_VEHICLE,
         vol.Optional("latitude"): vol.Coerce(float),
         vol.Optional("longitude"): vol.Coerce(float),
+        vol.Optional("location_entity"): cv.entity_id,
+        vol.Optional("use_phone_location", default=True): cv.boolean,
+        vol.Optional("use_car_location", default=False): cv.boolean,
         vol.Optional("radius", default=DEFAULT_OVERPASS_RADIUS): vol.Coerce(int),
         vol.Optional("target_input_select"): cv.entity_id,
     }
@@ -167,14 +173,11 @@ def _resolve_entry(hass: HomeAssistant, vehicle: str | None) -> dict[str, Any]:
     )
 
 
-def _car_coords(hass: HomeAssistant, entry: ConfigEntry) -> tuple[float, float] | None:
-    """Pobiera współrzędne z device_tracker pojazdu (jeśli skonfigurowany)."""
-    tracker = entry.options.get(CONF_DEVICE_TRACKER) or entry.data.get(
-        CONF_DEVICE_TRACKER
-    )
-    if not tracker:
+def _entity_coords(hass: HomeAssistant, entity_id: str | None) -> tuple[float, float] | None:
+    """Czyta współrzędne (latitude/longitude) z encji device_tracker/person."""
+    if not entity_id:
         return None
-    state = hass.states.get(tracker)
+    state = hass.states.get(entity_id)
     if state is None:
         return None
     lat = state.attributes.get("latitude")
@@ -182,6 +185,45 @@ def _car_coords(hass: HomeAssistant, entry: ConfigEntry) -> tuple[float, float] 
     if lat is None or lon is None:
         return None
     return float(lat), float(lon)
+
+
+def _resolve_location(
+    hass: HomeAssistant, entry: ConfigEntry, data: dict[str, Any]
+) -> tuple[float, float] | None:
+    """Ustala lokalizację wg priorytetu.
+
+    1) jawne latitude/longitude w wywołaniu,
+    2) jawna encja `location_entity` (np. konkretny telefon),
+    3) TELEFON wprowadzający tankowanie (phone_tracker) – źródło główne,
+    4) AUTO (device_tracker) – opcjonalny zapas (use_car_location=true).
+    """
+    lat = data.get("latitude")
+    lon = data.get("longitude")
+    if lat is not None and lon is not None:
+        return float(lat), float(lon)
+
+    if data.get("location_entity"):
+        coords = _entity_coords(hass, data["location_entity"])
+        if coords:
+            return coords
+
+    if data.get("use_phone_location", True):
+        phone = entry.options.get(CONF_PHONE_TRACKER) or entry.data.get(
+            CONF_PHONE_TRACKER
+        )
+        coords = _entity_coords(hass, phone)
+        if coords:
+            return coords
+
+    if data.get("use_car_location", False):
+        car = entry.options.get(CONF_DEVICE_TRACKER) or entry.data.get(
+            CONF_DEVICE_TRACKER
+        )
+        coords = _entity_coords(hass, car)
+        if coords:
+            return coords
+
+    return None
 
 
 def _notify_update(hass: HomeAssistant, entry_id: str) -> None:
@@ -205,9 +247,9 @@ def _register_services(hass: HomeAssistant) -> None:
         station_name = call.data.get("station_name")
         station_id = call.data.get("station_id", 0)
 
-        # 1) brak jawnych współrzędnych -> spróbuj z GPS auta
-        if (lat is None or lon is None) and call.data.get("use_car_location", True):
-            coords = _car_coords(hass, entry)
+        # 1) ustal lokalizację: jawna -> encja -> telefon -> auto
+        if lat is None or lon is None:
+            coords = _resolve_location(hass, entry, call.data)
             if coords:
                 lat, lon = coords
 
@@ -300,10 +342,11 @@ def _register_services(hass: HomeAssistant) -> None:
         lat = call.data.get("latitude")
         lon = call.data.get("longitude")
         if lat is None or lon is None:
-            coords = _car_coords(hass, entry)
+            coords = _resolve_location(hass, entry, call.data)
             if not coords:
                 raise HomeAssistantError(
-                    "Brak lokalizacji – podaj latitude/longitude lub skonfiguruj device_tracker."
+                    "Brak lokalizacji – podaj latitude/longitude, location_entity "
+                    "lub skonfiguruj telefon/auto."
                 )
             lat, lon = coords
 

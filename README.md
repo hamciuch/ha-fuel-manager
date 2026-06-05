@@ -12,8 +12,10 @@ paliwa oraz **import danych z aplikacji Fuelio** (CSV).
 
 - Serwis `fuel_manager.add_fueling` – zapis tankowania z pełnym zestawem pól;
   brakująca cena lub kwota jest doliczana automatycznie.
-- **Lokalizacja stacji** – jawne GPS lub pozycja z `device_tracker` auta;
-  gdy auto jest blisko znanej z historii stacji, jej nazwa/ID przyklejają się
+- **Lokalizacja stacji** – domyślnie z **telefonu wprowadzającego tankowanie**
+  (osoba/`device_tracker` telefonu), bo to on jest na stacji; pozycja auta jest
+  opcjonalnym zapasem. Można też podać jawne GPS lub konkretną encję. Gdy punkt
+  jest blisko znanej z historii stacji, jej nazwa/ID przyklejają się
   automatycznie (konfigurowalny promień).
 - `fuel_manager.find_nearby_stations` – wyszukiwanie stacji w OpenStreetMap
   (Overpass, bez klucza API) + z historii; może wypełnić `input_select`.
@@ -42,7 +44,18 @@ i zrestartuj HA.
 
 **Ustawienia → Urządzenia i usługi → Dodaj integrację → „Fuel Manager”**.
 Podaj nazwę pojazdu (np. `MG HS`), walutę, pojemność baku, domyślne paliwo,
-opcjonalnie `device_tracker` auta i promień „snapowania” do znanej stacji.
+**lokalizację telefonu** (osoba lub `device_tracker` telefonu – główne źródło
+pozycji), opcjonalnie lokalizację auta (zapas) i promień „snapowania” do znanej
+stacji.
+
+### Lokalizacja przy tankowaniu
+
+Tankowania wpisujesz w telefonie, więc to jego GPS jest źródłem pozycji.
+Priorytet: jawne `latitude/longitude` → `location_entity` → telefon
+(`use_phone_location`) → auto (`use_car_location`). Aby pozycja była świeża,
+przykładowy skrypt może najpierw wymusić aktualizację GPS przez aplikację
+mobilną (`notify.mobile_app_<telefon>` z treścią `request_location_update`) –
+podmień nazwę swojego `notify` w pakiecie lub usuń ten krok.
 
 > Nazwa pojazdu wyznacza `entity_id` sensorów: „MG HS” → `sensor.mg_hs_*`
 > (np. `sensor.mg_hs_najblizsza_stacja`). Przy innej nazwie popraw encje

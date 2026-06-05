@@ -9,9 +9,10 @@
           "currency": "Waluta",
           "tank_capacity": "Pojemność baku (L)",
           "default_fuel_type": "Domyślny rodzaj paliwa",
-          "device_tracker": "Lokalizacja auta (device_tracker)",
+          "device_tracker": "Lokalizacja auta (opcjonalny zapas)",
           "station_radius": "Promień snapowania do znanej stacji (m)",
-          "use_overpass": "Szukaj stacji w OpenStreetMap"
+          "use_overpass": "Szukaj stacji w OpenStreetMap",
+          "phone_tracker": "Lokalizacja telefonu (osoba/urządzenie) – główne źródło"
         }
       }
     },
@@ -27,9 +28,10 @@
           "currency": "Waluta",
           "tank_capacity": "Pojemność baku (L)",
           "default_fuel_type": "Domyślny rodzaj paliwa",
-          "device_tracker": "Lokalizacja auta (device_tracker)",
+          "device_tracker": "Lokalizacja auta (opcjonalny zapas)",
           "station_radius": "Promień snapowania do znanej stacji (m)",
-          "use_overpass": "Szukaj stacji w OpenStreetMap"
+          "use_overpass": "Szukaj stacji w OpenStreetMap",
+          "phone_tracker": "Lokalizacja telefonu (osoba/urządzenie) – główne źródło"
         }
       }
     }

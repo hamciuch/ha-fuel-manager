@@ -9,9 +9,10 @@
           "currency": "Currency",
           "tank_capacity": "Tank capacity (L)",
           "default_fuel_type": "Default fuel type",
-          "device_tracker": "Car location (device_tracker)",
+          "device_tracker": "Car location (optional fallback)",
           "station_radius": "Snap-to-known-station radius (m)",
-          "use_overpass": "Search stations in OpenStreetMap"
+          "use_overpass": "Search stations in OpenStreetMap",
+          "phone_tracker": "Phone location (person/device) – primary source"
         }
       }
     },
@@ -27,9 +28,10 @@
           "currency": "Currency",
           "tank_capacity": "Tank capacity (L)",
           "default_fuel_type": "Default fuel type",
-          "device_tracker": "Car location (device_tracker)",
+          "device_tracker": "Car location (optional fallback)",
           "station_radius": "Snap-to-known-station radius (m)",
-          "use_overpass": "Search stations in OpenStreetMap"
+          "use_overpass": "Search stations in OpenStreetMap",
+          "phone_tracker": "Phone location (person/device) – primary source"
         }
       }
     }

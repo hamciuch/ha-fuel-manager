@@ -1,6 +1,6 @@
 add_fueling:
   name: Dodaj tankowanie
-  description: Zapisuje nowe tankowanie. Lokalizacja może pochodzić z GPS auta (snap do znanej stacji) lub zostać podana ręcznie.
+  description: Zapisuje nowe tankowanie. Domyślnie lokalizacja brana jest z telefonu wprowadzającego wpis; auto jest opcjonalnym zapasem.
   fields:
     vehicle:
       name: Pojazd
@@ -122,11 +122,27 @@ add_fueling:
       required: false
       selector:
         text:
-    use_car_location:
-      name: Użyj lokalizacji auta
-      description: Pobierz GPS ze skonfigurowanego device_tracker, gdy brak współrzędnych.
+    location_entity:
+      name: Encja lokalizacji
+      description: Konkretny telefon/osoba, z której wziąć GPS (np. device_tracker.telefon_marka).
+      required: false
+      selector:
+        entity:
+          domain:
+            - person
+            - device_tracker
+    use_phone_location:
+      name: Użyj lokalizacji telefonu
+      description: Pobierz GPS ze skonfigurowanego telefonu (główne źródło), gdy brak współrzędnych.
       required: false
       default: true
+      selector:
+        boolean:
+    use_car_location:
+      name: Użyj lokalizacji auta (zapas)
+      description: Gdy brak GPS telefonu, użyj pozycji auta.
+      required: false
+      default: false
       selector:
         boolean:
 
@@ -194,11 +210,31 @@ export_fuelio:
 
 find_nearby_stations:
   name: Znajdź pobliskie stacje
-  description: Wyszukuje stacje w pobliżu (OSM/Overpass + historia) i opcjonalnie wypełnia input_select.
+  description: Wyszukuje stacje w pobliżu (OSM/Overpass + historia) i opcjonalnie wypełnia input_select. Lokalizacja domyślnie z telefonu.
   fields:
     vehicle: { name: Pojazd, required: false, selector: { text: } }
     latitude: { name: Szerokość, required: false, selector: { number: { mode: box } } }
     longitude: { name: Długość, required: false, selector: { number: { mode: box } } }
+    location_entity:
+      name: Encja lokalizacji
+      required: false
+      selector:
+        entity:
+          domain:
+            - person
+            - device_tracker
+    use_phone_location:
+      name: Użyj lokalizacji telefonu
+      required: false
+      default: true
+      selector:
+        boolean:
+    use_car_location:
+      name: Użyj lokalizacji auta (zapas)
+      required: false
+      default: false
+      selector:
+        boolean:
     radius:
       name: Promień (m)
       required: false

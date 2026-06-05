@@ -101,10 +101,17 @@ script:
     alias: "Tankowanie: znajdź stacje"
     icon: mdi:map-search
     sequence:
+      # (opcjonalnie) poproś telefon o świeży GPS – PODMIEŃ na swoje notify.mobile_app_*
+      # i usuń ten blok, jeśli nie chcesz wymuszać aktualizacji lokalizacji.
+      - service: notify.mobile_app_telefon
+        data:
+          message: "request_location_update"
+      - delay: "00:00:03"
       - service: fuel_manager.find_nearby_stations
         data:
           vehicle: "{{ states('input_select.fuel_vehicle') }}"
           radius: 1500
+          use_phone_location: true
           target_input_select: input_select.fuel_station
         response_variable: result
       - if: "{{ result.stations | count > 0 }}"
@@ -191,7 +198,8 @@ script:
               fuel_type: "{{ ftype_map[states('input_select.fuel_type')] | default(110) }}"
               timestamp: "{{ ts }}"
               station_name: "{{ states('input_text.fuel_manual_station') }}"
-              use_car_location: true
+              use_phone_location: true
+              use_car_location: false
               notes: "{{ states('input_text.fuel_notes') }}"
       # reset formularza
       - service: input_number.set_value

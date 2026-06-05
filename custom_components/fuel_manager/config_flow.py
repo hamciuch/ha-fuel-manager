@@ -18,6 +18,7 @@ from .const import (
     CONF_CURRENCY,
     CONF_DEFAULT_FUEL_TYPE,
     CONF_DEVICE_TRACKER,
+    CONF_PHONE_TRACKER,
     CONF_STATION_RADIUS,
     CONF_TANK_CAPACITY,
     CONF_USE_OVERPASS,
@@ -58,6 +59,7 @@ class FuelManagerConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_DEFAULT_FUEL_TYPE: int(
                         user_input.get(CONF_DEFAULT_FUEL_TYPE, DEFAULT_FUEL_TYPE)
                     ),
+                    CONF_PHONE_TRACKER: user_input.get(CONF_PHONE_TRACKER),
                     CONF_DEVICE_TRACKER: user_input.get(CONF_DEVICE_TRACKER),
                     CONF_STATION_RADIUS: user_input.get(
                         CONF_STATION_RADIUS, DEFAULT_STATION_RADIUS
@@ -77,6 +79,9 @@ class FuelManagerConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_DEFAULT_FUEL_TYPE, default=str(DEFAULT_FUEL_TYPE)
                 ): selector.SelectSelector(
                     selector.SelectSelectorConfig(options=_FUEL_OPTIONS)
+                ),
+                vol.Optional(CONF_PHONE_TRACKER): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain=["person", "device_tracker"])
                 ),
                 vol.Optional(CONF_DEVICE_TRACKER): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain=["device_tracker", "person"])
@@ -124,6 +129,12 @@ class FuelManagerOptionsFlow(OptionsFlow):
                     default=str(o.get(CONF_DEFAULT_FUEL_TYPE, DEFAULT_FUEL_TYPE)),
                 ): selector.SelectSelector(
                     selector.SelectSelectorConfig(options=_FUEL_OPTIONS)
+                ),
+                vol.Optional(
+                    CONF_PHONE_TRACKER,
+                    description={"suggested_value": o.get(CONF_PHONE_TRACKER)},
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain=["person", "device_tracker"])
                 ),
                 vol.Optional(
                     CONF_DEVICE_TRACKER,
