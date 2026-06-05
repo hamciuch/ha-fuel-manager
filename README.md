@@ -105,8 +105,9 @@ data:
   file_path: /config/fuelio/car5-20260427-105230.csv
 ```
 
-Można też wkleić zawartość w polu `content`. Plik musi być w `/config`
-lub katalogu z `allowlist_external_dirs`. Import jest idempotentny (po GUID).
+Plik z katalogu `/config` (lub podkatalogu) działa bez dodatkowej konfiguracji.
+Inne lokalizacje wymagają wpisu w `allowlist_external_dirs`. Możesz też pominąć
+plik i wkleić całą zawartość CSV w polu `content`. Import jest idempotentny (po GUID).
 
 ## ⛽ Kody rodzaju paliwa (Fuelio)
 

@@ -230,6 +230,18 @@ def _notify_update(hass: HomeAssistant, entry_id: str) -> None:
     async_dispatcher_send(hass, SIGNAL_UPDATE.format(entry_id=entry_id))
 
 
+def _path_allowed(hass: HomeAssistant, path: str) -> bool:
+    """Dozwolone: allowlist_external_dirs LUB katalog konfiguracyjny HA (/config)."""
+    if hass.config.is_allowed_path(path):
+        return True
+    abspath = os.path.abspath(path)
+    config_dir = os.path.abspath(hass.config.config_dir)
+    try:
+        return os.path.commonpath([abspath, config_dir]) == config_dir
+    except ValueError:
+        return False
+
+
 # ---- Handlery serwisów ----------------------------------------------------
 
 
@@ -305,9 +317,10 @@ def _register_services(hass: HomeAssistant) -> None:
             path = call.data.get("file_path")
             if not path:
                 raise HomeAssistantError("Podaj 'file_path' lub 'content'.")
-            if not hass.config.is_allowed_path(path):
+            if not _path_allowed(hass, path):
                 raise HomeAssistantError(
-                    f"Ścieżka '{path}' nie jest dozwolona (dodaj do allowlist_external_dirs)."
+                    f"Ścieżka '{path}' nie jest dozwolona. Użyj pliku w /config "
+                    "albo dodaj katalog do allowlist_external_dirs."
                 )
 
             def _read() -> str:
@@ -325,8 +338,11 @@ def _register_services(hass: HomeAssistant) -> None:
     async def handle_export(call: ServiceCall) -> ServiceResponse:
         d = _resolve_entry(hass, call.data.get("vehicle"))
         path = call.data["file_path"]
-        if not hass.config.is_allowed_path(os.path.dirname(path) or "."):
-            raise HomeAssistantError("Ścieżka zapisu nie jest dozwolona.")
+        if not _path_allowed(hass, path):
+            raise HomeAssistantError(
+                "Ścieżka zapisu nie jest dozwolona. Użyj katalogu /config "
+                "albo dodaj go do allowlist_external_dirs."
+            )
         csv_text = export_fuelio(d["entry"].title, d["data"].fuelings)
 
         def _write() -> None:
