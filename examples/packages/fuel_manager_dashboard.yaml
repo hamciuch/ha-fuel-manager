@@ -77,6 +77,9 @@ input_boolean:
   fuel_full_tank:
     name: Pełny bak
     icon: mdi:fuel
+  fuel_use_car_fallback:
+    name: Zapasowo lokalizacja auta
+    icon: mdi:car-connected
 
 input_datetime:
   fuel_datetime:
@@ -112,6 +115,7 @@ script:
           vehicle: "{{ states('input_select.fuel_vehicle') }}"
           radius: 1500
           use_phone_location: true
+          use_car_location: "{{ is_state('input_boolean.fuel_use_car_fallback','on') }}"
           target_input_select: input_select.fuel_station
         response_variable: result
       - if: "{{ result.stations | count > 0 }}"
@@ -199,7 +203,7 @@ script:
               timestamp: "{{ ts }}"
               station_name: "{{ states('input_text.fuel_manual_station') }}"
               use_phone_location: true
-              use_car_location: false
+              use_car_location: "{{ is_state('input_boolean.fuel_use_car_fallback','on') }}"
               notes: "{{ states('input_text.fuel_notes') }}"
       # reset formularza
       - service: input_number.set_value

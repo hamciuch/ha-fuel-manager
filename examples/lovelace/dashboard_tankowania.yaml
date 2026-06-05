@@ -35,6 +35,8 @@ cards:
             name: Rodzaj paliwa
           - entity: input_boolean.fuel_full_tank
             name: Pełny bak
+          - entity: input_boolean.fuel_use_car_fallback
+            name: Zapasowo lokalizacja auta
           - entity: input_text.fuel_notes
             name: Notatki
 
