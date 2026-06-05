@@ -1,14 +1,43 @@
 # =============================================================================
 #  Fuel Manager – pakiet pomocników i skryptów do formularza tankowania
-#  Umieść w: /config/packages/fuel_manager_dashboard.yaml
+#  Wersja WIELOAUTOWA. Umieść w: /config/packages/fuel_manager_dashboard.yaml
 #  Wymaga w configuration.yaml:
 #     homeassistant:
 #       packages: !include_dir_named packages
 #
-#  UWAGA: encje sensorów zależą od NAZWY pojazdu. Dla "MG HS" będzie to
-#  sensor.mg_hs_najblizsza_stacja itd. Jeśli nazwałeś pojazd inaczej –
-#  popraw entity_id w skryptach poniżej (Narzędzia deweloperskie -> Stany).
+#  Jedno auto? Zostaw jedną opcję w input_select.fuel_vehicle.
+#  Dwa+ auta? Wpisz ich nazwy DOKŁADNIE tak, jak w integracji
+#  (Ustawienia -> Urządzenia i usługi -> Fuel Manager -> tytuł wpisu).
+#  Sensor najbliższej stacji jest dobierany automatycznie po nazwie auta
+#  (slug), np. "MG HS" -> sensor.mg_hs_najblizsza_stacja.
 # =============================================================================
+
+input_select:
+  fuel_vehicle:
+    name: Auto
+    icon: mdi:car
+    options:
+      - "MG HS"
+      # - "Skoda Octavia"   # <- dodaj kolejne auta tutaj
+  fuel_type:
+    name: Rodzaj paliwa
+    icon: mdi:gas-station
+    options:
+      - "Benzyna 95 (Pb95)"
+      - "Benzyna 98 (Pb98)"
+      - "Benzyna 100 (Pb100/Verva/V-Power)"
+      - "Diesel (ON)"
+      - "Diesel Premium"
+      - "LPG"
+      - "CNG"
+      - "Prąd (EV)"
+      - "Inny"
+    initial: "Benzyna 95 (Pb95)"
+  fuel_station:
+    name: Stacja
+    icon: mdi:map-marker
+    options:
+      - "— najpierw wyszukaj stacje —"
 
 input_number:
   fuel_odometer:
@@ -66,48 +95,25 @@ input_text:
     max: 120
     icon: mdi:gas-station
 
-input_select:
-  fuel_type:
-    name: Rodzaj paliwa
-    icon: mdi:gas-station
-    options:
-      - "Benzyna 95 (Pb95)"
-      - "Benzyna 98 (Pb98)"
-      - "Benzyna 100 (Pb100/Verva/V-Power)"
-      - "Diesel (ON)"
-      - "Diesel Premium"
-      - "LPG"
-      - "CNG"
-      - "Prąd (EV)"
-      - "Inny"
-    initial: "Benzyna 95 (Pb95)"
-  fuel_station:
-    name: Stacja
-    icon: mdi:map-marker
-    options:
-      - "— najpierw wyszukaj stacje —"
-
 script:
-  # --- 1) Wyszukaj pobliskie stacje i wypełnij listę wyboru -----------------
+  # --- 1) Wyszukaj pobliskie stacje dla wybranego auta ----------------------
   fuel_find_stations:
     alias: "Tankowanie: znajdź stacje"
     icon: mdi:map-search
     sequence:
       - service: fuel_manager.find_nearby_stations
         data:
-          # vehicle: "MG HS"   # odkomentuj przy wielu pojazdach
+          vehicle: "{{ states('input_select.fuel_vehicle') }}"
           radius: 1500
           target_input_select: input_select.fuel_station
         response_variable: result
-      # automatycznie wybierz najbliższą (pierwszą) stację
       - if: "{{ result.stations | count > 0 }}"
         then:
           - service: input_select.select_option
             target:
               entity_id: input_select.fuel_station
             data:
-              option: >
-                {{ result.stations[0].name }} ({{ result.stations[0].distance_m }} m)
+              option: "{{ result.stations[0].name }} ({{ result.stations[0].distance_m }} m)"
 
   # --- 2) Ustaw datę/czas na teraz ------------------------------------------
   fuel_set_now:
@@ -120,14 +126,16 @@ script:
         data:
           datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
-  # --- 3) Zapisz tankowanie -------------------------------------------------
+  # --- 3) Zapisz tankowanie dla wybranego auta ------------------------------
   fuel_submit:
     alias: "Tankowanie: zapisz"
     icon: mdi:content-save
     variables:
+      veh: "{{ states('input_select.fuel_vehicle') }}"
       sel: "{{ states('input_select.fuel_station') }}"
-      stations: "{{ state_attr('sensor.mg_hs_najblizsza_stacja','stations') or [] }}"
-      # mapa etykieta -> kod Fuelio
+      # sensor najbliższej stacji wybranego auta (po slugu nazwy)
+      station_sensor: "sensor.{{ veh | slugify }}_najblizsza_stacja"
+      stations: "{{ state_attr(station_sensor, 'stations') or [] }}"
       ftype_map:
         "Benzyna 95 (Pb95)": 110
         "Benzyna 98 (Pb98)": 111
@@ -138,7 +146,6 @@ script:
         "CNG": 140
         "Prąd (EV)": 160
         "Inny": 0
-      # dopasuj wybraną stację do współrzędnych z sensora
       matched: >
         {% set ns = namespace(s=none) %}
         {% for s in stations %}
@@ -146,9 +153,12 @@ script:
         {% endfor %}
         {{ ns.s }}
       ts: >
-        {{ states('input_datetime.fuel_datetime') | as_datetime | as_local | as_datetime.isoformat()
-           if states('input_datetime.fuel_datetime') not in ['unknown','unavailable']
-           else now().isoformat() }}
+        {% set v = states('input_datetime.fuel_datetime') %}
+        {% if v not in ['unknown', 'unavailable', 'none'] %}
+        {{ (v | as_datetime | as_local).isoformat() }}
+        {% else %}
+        {{ now().isoformat() }}
+        {% endif %}
     sequence:
       - choose:
           # A) wybrano znalezioną stację (mamy współrzędne)
@@ -156,6 +166,7 @@ script:
             sequence:
               - service: fuel_manager.add_fueling
                 data:
+                  vehicle: "{{ veh }}"
                   odometer: "{{ states('input_number.fuel_odometer') | float }}"
                   fuel: "{{ states('input_number.fuel_liters') | float }}"
                   price_per_liter: "{{ states('input_number.fuel_price_per_liter') | float }}"
@@ -167,10 +178,11 @@ script:
                   latitude: "{{ matched.latitude }}"
                   longitude: "{{ matched.longitude }}"
                   notes: "{{ states('input_text.fuel_notes') }}"
-        # B) brak wybranej stacji – użyj GPS auta lub nazwy ręcznej
+        # B) brak wybranej stacji – GPS auta lub nazwa ręczna
         default:
           - service: fuel_manager.add_fueling
             data:
+              vehicle: "{{ veh }}"
               odometer: "{{ states('input_number.fuel_odometer') | float }}"
               fuel: "{{ states('input_number.fuel_liters') | float }}"
               price_per_liter: "{{ states('input_number.fuel_price_per_liter') | float }}"
@@ -183,10 +195,7 @@ script:
               notes: "{{ states('input_text.fuel_notes') }}"
       # reset formularza
       - service: input_number.set_value
-        target: { entity_id: input_number.fuel_liters }
-        data: { value: 0 }
-      - service: input_number.set_value
-        target: { entity_id: input_number.fuel_total_cost }
+        target: { entity_id: [input_number.fuel_liters, input_number.fuel_total_cost] }
         data: { value: 0 }
       - service: input_text.set_value
         target: { entity_id: [input_text.fuel_notes, input_text.fuel_manual_station] }

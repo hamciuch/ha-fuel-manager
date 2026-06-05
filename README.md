@@ -62,11 +62,33 @@ homeassistant:
 Gotowy widok Lovelace: [`examples/lovelace/dashboard_tankowania.yaml`](examples/lovelace/dashboard_tankowania.yaml).
 Przepływ: **Szukaj stacji** → litry/cena → **Zapisz**.
 
+## 🚗🚙 Więcej niż jedno auto
+
+Po prostu **dodaj integrację ponownie** dla każdego auta (Dodaj integrację →
+Fuel Manager → inna nazwa). Każde auto ma wtedy własne urządzenie, własne
+sensory (`sensor.mg_hs_*`, `sensor.skoda_*`), osobny zapis danych i niezależny
+import. W serwisach wskazujesz auto parametrem `vehicle` (gdy aut jest więcej,
+jest wymagany):
+
+```yaml
+service: fuel_manager.add_fueling
+data:
+  vehicle: "Skoda Octavia"
+  odometer: 154000
+  fuel: 45.2
+  price_per_liter: 6.49
+```
+
+Przykładowy formularz/dashboard są **wieloautowe** – wybierasz auto w
+`input_select.fuel_vehicle` (wpisz w nim nazwy aut dokładnie jak w integracji),
+a statystyki i historia automatycznie podążają za wybranym autem.
+
 ## 📥 Import z Fuelio
 
 ```yaml
 service: fuel_manager.import_fuelio
 data:
+  vehicle: "MG HS"   # gdy masz więcej aut
   file_path: /config/fuelio/car5-20260427-105230.csv
 ```
 

@@ -1,6 +1,8 @@
 # =============================================================================
-#  Dashboard "Tankowania" – wklej jako nowy widok (tryb YAML / surowy edytor).
-#  Encje zakładają nazwę pojazdu "MG HS" -> slug "mg_hs". Popraw, jeśli inna.
+#  Dashboard "Tankowania" (WIELOAUTOWY) – wklej jako nowy widok (edytor surowy).
+#  Formularz przekazuje wybrane auto do serwisów. Statystyki i historia
+#  podążają za autem wybranym w input_select.fuel_vehicle (szablony Jinja).
+#  Nie wymaga kart z HACS.
 # =============================================================================
 title: Tankowania
 path: tankowania
@@ -14,6 +16,8 @@ cards:
       - type: entities
         show_header_toggle: false
         entities:
+          - entity: input_select.fuel_vehicle
+            name: Auto
           - entity: input_datetime.fuel_datetime
             name: Data i czas
           - entity: script.fuel_set_now
@@ -42,8 +46,6 @@ cards:
             name: Wybór stacji
           - entity: input_text.fuel_manual_station
             name: Lub wpisz ręcznie
-          - entity: sensor.mg_hs_najblizsza_stacja
-            name: Najbliższa (wykryta)
 
       - type: horizontal-stack
         cards:
@@ -60,55 +62,28 @@ cards:
               action: call-service
               service: script.fuel_submit
 
-  # --- STATYSTYKI -----------------------------------------------------------
-  - type: vertical-stack
-    cards:
-      - type: glance
-        title: Podsumowanie
-        columns: 3
-        entities:
-          - entity: sensor.mg_hs_srednie_spalanie
-            name: Śr. spalanie
-          - entity: sensor.mg_hs_srednia_cena_litr
-            name: Śr. cena/L
-          - entity: sensor.mg_hs_koszt_na_km
-            name: Koszt/km
-          - entity: sensor.mg_hs_suma_kosztow_paliwa
-            name: Suma kosztów
-          - entity: sensor.mg_hs_suma_zatankowanego_paliwa
-            name: Suma litrów
-          - entity: sensor.mg_hs_liczba_tankowan
-            name: Tankowań
-      - type: glance
-        title: Ostatnie tankowanie
-        entities:
-          - entity: sensor.mg_hs_ostatni_przebieg
-            name: Przebieg
-          - entity: sensor.mg_hs_ostatnia_cena_litr
-            name: Cena/L
-          - entity: sensor.mg_hs_ostatnia_kwota
-            name: Kwota
-          - entity: sensor.mg_hs_ostatnie_spalanie
-            name: Spalanie
-
-      # wykres spalania i ceny w czasie (recorder)
-      - type: history-graph
-        title: Spalanie i cena/litr
-        hours_to_show: 8760
-        entities:
-          - sensor.mg_hs_ostatnie_spalanie
-          - sensor.mg_hs_ostatnia_cena_litr
-
-  # --- HISTORIA (z atrybutu sensora) ----------------------------------------
+  # --- STATYSTYKI + HISTORIA WYBRANEGO AUTA (dynamicznie) -------------------
   - type: markdown
-    title: Historia tankowań
     content: >
+      {% set slug = states('input_select.fuel_vehicle') | slugify %}
+      {% set p = 'sensor.' ~ slug ~ '_' %}
+      ## 📊 {{ states('input_select.fuel_vehicle') }}
+
+      | Śr. spalanie | Śr. cena/L | Koszt/km | Suma kosztów | Litrów | Tankowań |
+      | ---: | ---: | ---: | ---: | ---: | ---: |
+      | {{ states(p ~ 'srednie_spalanie') }} | {{ states(p ~ 'srednia_cena_litr') }} |
+      {{ states(p ~ 'koszt_na_km') }} | {{ states(p ~ 'suma_kosztow_paliwa') }} |
+      {{ states(p ~ 'suma_zatankowanego_paliwa') }} | {{ states(p ~ 'liczba_tankowan') }} |
+
+      **Ostatnie:** przebieg {{ states(p ~ 'ostatni_przebieg') }} km ·
+      {{ states(p ~ 'ostatnia_cena_litr') }} zł/L ·
+      {{ states(p ~ 'ostatnia_kwota') }} zł ·
+      spalanie {{ states(p ~ 'ostatnie_spalanie') }} L/100km
+
+      ### Historia
+
       | Data | Przebieg | Litry | Cena/L | Kwota | Spalanie | Stacja |
-
       | --- | ---: | ---: | ---: | ---: | ---: | --- |
-
-      {% for f in state_attr('sensor.mg_hs_historia_tankowan','fuelings') or [] %}
-      | {{ f.timestamp[:16] | replace('T',' ') }} | {{ f.odometer | round(0) }} |
-      {{ f.fuel }} | {{ f.price_per_liter }} | {{ f.total_cost }} |
-      {{ f.consumption if f.consumption else '–' }} | {{ f.station_name }} |
+      {% for f in state_attr(p ~ 'historia_tankowan', 'fuelings') or [] -%}
+      | {{ f.timestamp[:16] | replace('T',' ') }} | {{ f.odometer | round(0) }} | {{ f.fuel }} | {{ f.price_per_liter }} | {{ f.total_cost }} | {{ f.consumption if f.consumption else '–' }} | {{ f.station_name }} |
       {% endfor %}
