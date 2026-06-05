@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & attach release zip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Wstrzyknij numer wersji z taga do manifest.json
+      - name: Set version in manifest
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          jq --arg v "$version" '.version = $v' \
+            custom_components/fuel_manager/manifest.json > tmp.json
+          mv tmp.json custom_components/fuel_manager/manifest.json
+
+      - name: Zip integration
+        run: |
+          cd custom_components/fuel_manager
+          zip -r ../../fuel_manager.zip . -x '*/__pycache__/*'
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: fuel_manager.zip

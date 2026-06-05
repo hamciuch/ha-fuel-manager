@@ -1,0 +1,218 @@
+add_fueling:
+  name: Dodaj tankowanie
+  description: Zapisuje nowe tankowanie. Lokalizacja może pochodzić z GPS auta (snap do znanej stacji) lub zostać podana ręcznie.
+  fields:
+    vehicle:
+      name: Pojazd
+      description: Nazwa pojazdu (gdy skonfigurowano więcej niż jeden).
+      required: false
+      example: "MG HS"
+      selector:
+        text:
+    odometer:
+      name: Przebieg (km)
+      required: true
+      example: 21358
+      selector:
+        number:
+          min: 0
+          max: 2000000
+          step: 1
+          unit_of_measurement: km
+          mode: box
+    fuel:
+      name: Ilość paliwa (litry)
+      required: true
+      example: 29.03
+      selector:
+        number:
+          min: 0
+          max: 200
+          step: 0.01
+          unit_of_measurement: L
+          mode: box
+    price_per_liter:
+      name: Cena za litr
+      required: false
+      example: 6.27
+      selector:
+        number:
+          min: 0
+          max: 50
+          step: 0.001
+          unit_of_measurement: zł/L
+          mode: box
+    total_cost:
+      name: Kwota całkowita
+      description: Jeśli pominiesz, zostanie policzona z ceny i ilości (i odwrotnie).
+      required: false
+      example: 182.02
+      selector:
+        number:
+          min: 0
+          max: 5000
+          step: 0.01
+          unit_of_measurement: zł
+          mode: box
+    full:
+      name: Pełny bak
+      required: false
+      default: true
+      selector:
+        boolean:
+    fuel_type:
+      name: Rodzaj paliwa
+      required: false
+      default: 110
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - { value: "110", label: "Benzyna 95 (Pb95)" }
+            - { value: "111", label: "Benzyna 98 (Pb98)" }
+            - { value: "112", label: "Benzyna 100 (Pb100/Verva/V-Power)" }
+            - { value: "120", label: "Diesel (ON)" }
+            - { value: "121", label: "Diesel Premium" }
+            - { value: "130", label: "LPG" }
+            - { value: "140", label: "CNG" }
+            - { value: "160", label: "Prąd (EV)" }
+            - { value: "0", label: "Inny" }
+    tank_number:
+      name: Numer baku
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 2
+          mode: box
+    timestamp:
+      name: Data i czas
+      description: ISO 8601. Pominięte = teraz.
+      required: false
+      example: "2026-04-24T17:29:00"
+      selector:
+        text:
+    station_name:
+      name: Nazwa stacji
+      required: false
+      example: "Warszawa - Orlen"
+      selector:
+        text:
+    latitude:
+      name: Szerokość geogr.
+      required: false
+      selector:
+        number:
+          min: -90
+          max: 90
+          step: 0.000001
+          mode: box
+    longitude:
+      name: Długość geogr.
+      required: false
+      selector:
+        number:
+          min: -180
+          max: 180
+          step: 0.000001
+          mode: box
+    notes:
+      name: Notatki
+      required: false
+      selector:
+        text:
+    use_car_location:
+      name: Użyj lokalizacji auta
+      description: Pobierz GPS ze skonfigurowanego device_tracker, gdy brak współrzędnych.
+      required: false
+      default: true
+      selector:
+        boolean:
+
+edit_fueling:
+  name: Edytuj tankowanie
+  fields:
+    vehicle:
+      name: Pojazd
+      required: false
+      selector:
+        text:
+    id:
+      name: ID tankowania
+      required: true
+      selector:
+        text:
+    odometer: { name: Przebieg, required: false, selector: { number: { mode: box } } }
+    fuel: { name: Paliwo, required: false, selector: { number: { mode: box } } }
+    price_per_liter: { name: Cena/litr, required: false, selector: { number: { mode: box } } }
+    total_cost: { name: Kwota, required: false, selector: { number: { mode: box } } }
+    full: { name: Pełny bak, required: false, selector: { boolean: } }
+    station_name: { name: Stacja, required: false, selector: { text: } }
+    notes: { name: Notatki, required: false, selector: { text: } }
+
+delete_fueling:
+  name: Usuń tankowanie
+  fields:
+    vehicle: { name: Pojazd, required: false, selector: { text: } }
+    id:
+      name: ID tankowania
+      required: true
+      selector:
+        text:
+
+import_fuelio:
+  name: Import z Fuelio (CSV)
+  description: Importuje dziennik tankowań z pliku eksportu Fuelio. Dedup po GUID.
+  fields:
+    vehicle: { name: Pojazd, required: false, selector: { text: } }
+    file_path:
+      name: Ścieżka pliku
+      description: Np. /config/fuelio/car5.csv (katalog musi być w allowlist_external_dirs lub /config).
+      required: false
+      example: "/config/fuelio_export.csv"
+      selector:
+        text:
+    content:
+      name: Treść CSV
+      description: Alternatywnie wklej całą zawartość pliku.
+      required: false
+      selector:
+        text:
+          multiline: true
+
+export_fuelio:
+  name: Eksport do Fuelio (CSV)
+  fields:
+    vehicle: { name: Pojazd, required: false, selector: { text: } }
+    file_path:
+      name: Ścieżka zapisu
+      required: true
+      example: "/config/fuelio_backup.csv"
+      selector:
+        text:
+
+find_nearby_stations:
+  name: Znajdź pobliskie stacje
+  description: Wyszukuje stacje w pobliżu (OSM/Overpass + historia) i opcjonalnie wypełnia input_select.
+  fields:
+    vehicle: { name: Pojazd, required: false, selector: { text: } }
+    latitude: { name: Szerokość, required: false, selector: { number: { mode: box } } }
+    longitude: { name: Długość, required: false, selector: { number: { mode: box } } }
+    radius:
+      name: Promień (m)
+      required: false
+      default: 1500
+      selector:
+        number:
+          min: 100
+          max: 10000
+          step: 100
+          unit_of_measurement: m
+          mode: slider
+    target_input_select:
+      name: input_select do wypełnienia
+      required: false
+      selector:
+        entity:
+          domain: input_select

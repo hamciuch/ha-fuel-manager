@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add vehicle",
+        "description": "Configure a vehicle to track refuelings.",
+        "data": {
+          "name": "Vehicle name",
+          "currency": "Currency",
+          "tank_capacity": "Tank capacity (L)",
+          "default_fuel_type": "Default fuel type",
+          "device_tracker": "Car location (device_tracker)",
+          "station_radius": "Snap-to-known-station radius (m)",
+          "use_overpass": "Search stations in OpenStreetMap"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This vehicle is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Vehicle settings",
+        "data": {
+          "currency": "Currency",
+          "tank_capacity": "Tank capacity (L)",
+          "default_fuel_type": "Default fuel type",
+          "device_tracker": "Car location (device_tracker)",
+          "station_radius": "Snap-to-known-station radius (m)",
+          "use_overpass": "Search stations in OpenStreetMap"
+        }
+      }
+    }
+  }
+}

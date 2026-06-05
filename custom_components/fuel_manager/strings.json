@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dodaj pojazd",
+        "description": "Skonfiguruj pojazd do śledzenia tankowań.",
+        "data": {
+          "name": "Nazwa pojazdu",
+          "currency": "Waluta",
+          "tank_capacity": "Pojemność baku (L)",
+          "default_fuel_type": "Domyślny rodzaj paliwa",
+          "device_tracker": "Lokalizacja auta (device_tracker)",
+          "station_radius": "Promień snapowania do znanej stacji (m)",
+          "use_overpass": "Szukaj stacji w OpenStreetMap"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Ten pojazd jest już skonfigurowany."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ustawienia pojazdu",
+        "data": {
+          "currency": "Waluta",
+          "tank_capacity": "Pojemność baku (L)",
+          "default_fuel_type": "Domyślny rodzaj paliwa",
+          "device_tracker": "Lokalizacja auta (device_tracker)",
+          "station_radius": "Promień snapowania do znanej stacji (m)",
+          "use_overpass": "Szukaj stacji w OpenStreetMap"
+        }
+      }
+    }
+  }
+}

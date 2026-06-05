@@ -1,0 +1,114 @@
+# =============================================================================
+#  Dashboard "Tankowania" – wklej jako nowy widok (tryb YAML / surowy edytor).
+#  Encje zakładają nazwę pojazdu "MG HS" -> slug "mg_hs". Popraw, jeśli inna.
+# =============================================================================
+title: Tankowania
+path: tankowania
+icon: mdi:gas-station
+cards:
+  # --- FORMULARZ NOWEGO TANKOWANIA ------------------------------------------
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: "## ⛽ Nowe tankowanie"
+      - type: entities
+        show_header_toggle: false
+        entities:
+          - entity: input_datetime.fuel_datetime
+            name: Data i czas
+          - entity: script.fuel_set_now
+            name: Ustaw czas na teraz
+            icon: mdi:clock
+          - entity: input_number.fuel_odometer
+            name: Przebieg (km)
+          - entity: input_number.fuel_liters
+            name: Litry
+          - entity: input_number.fuel_price_per_liter
+            name: Cena/litr
+          - entity: input_number.fuel_total_cost
+            name: Kwota
+          - entity: input_select.fuel_type
+            name: Rodzaj paliwa
+          - entity: input_boolean.fuel_full_tank
+            name: Pełny bak
+          - entity: input_text.fuel_notes
+            name: Notatki
+
+      - type: markdown
+        content: "### 📍 Stacja"
+      - type: entities
+        entities:
+          - entity: input_select.fuel_station
+            name: Wybór stacji
+          - entity: input_text.fuel_manual_station
+            name: Lub wpisz ręcznie
+          - entity: sensor.mg_hs_najblizsza_stacja
+            name: Najbliższa (wykryta)
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Szukaj stacji
+            icon: mdi:map-search
+            tap_action:
+              action: call-service
+              service: script.fuel_find_stations
+          - type: button
+            name: Zapisz tankowanie
+            icon: mdi:content-save
+            tap_action:
+              action: call-service
+              service: script.fuel_submit
+
+  # --- STATYSTYKI -----------------------------------------------------------
+  - type: vertical-stack
+    cards:
+      - type: glance
+        title: Podsumowanie
+        columns: 3
+        entities:
+          - entity: sensor.mg_hs_srednie_spalanie
+            name: Śr. spalanie
+          - entity: sensor.mg_hs_srednia_cena_litr
+            name: Śr. cena/L
+          - entity: sensor.mg_hs_koszt_na_km
+            name: Koszt/km
+          - entity: sensor.mg_hs_suma_kosztow_paliwa
+            name: Suma kosztów
+          - entity: sensor.mg_hs_suma_zatankowanego_paliwa
+            name: Suma litrów
+          - entity: sensor.mg_hs_liczba_tankowan
+            name: Tankowań
+      - type: glance
+        title: Ostatnie tankowanie
+        entities:
+          - entity: sensor.mg_hs_ostatni_przebieg
+            name: Przebieg
+          - entity: sensor.mg_hs_ostatnia_cena_litr
+            name: Cena/L
+          - entity: sensor.mg_hs_ostatnia_kwota
+            name: Kwota
+          - entity: sensor.mg_hs_ostatnie_spalanie
+            name: Spalanie
+
+      # wykres spalania i ceny w czasie (recorder)
+      - type: history-graph
+        title: Spalanie i cena/litr
+        hours_to_show: 8760
+        entities:
+          - sensor.mg_hs_ostatnie_spalanie
+          - sensor.mg_hs_ostatnia_cena_litr
+
+  # --- HISTORIA (z atrybutu sensora) ----------------------------------------
+  - type: markdown
+    title: Historia tankowań
+    content: >
+      | Data | Przebieg | Litry | Cena/L | Kwota | Spalanie | Stacja |
+
+      | --- | ---: | ---: | ---: | ---: | ---: | --- |
+
+      {% for f in state_attr('sensor.mg_hs_historia_tankowan','fuelings') or [] %}
+      | {{ f.timestamp[:16] | replace('T',' ') }} | {{ f.odometer | round(0) }} |
+      {{ f.fuel }} | {{ f.price_per_liter }} | {{ f.total_cost }} |
+      {{ f.consumption if f.consumption else '–' }} | {{ f.station_name }} |
+      {% endfor %}
