@@ -207,7 +207,7 @@ class HistorySensor(_Base):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         rows = []
-        for f in self._data.fuelings[:50]:
+        for f in self._data.fuelings[:500]:
             rows.append(
                 {
                     "id": f.get("id"),

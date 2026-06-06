@@ -75,6 +75,24 @@ homeassistant:
 Gotowy widok Lovelace: [`examples/lovelace/dashboard_tankowania.yaml`](examples/lovelace/dashboard_tankowania.yaml).
 Przepływ: **Szukaj stacji** → litry/cena → **Zapisz**.
 
+## 📈 Historia i oś czasu
+
+Wszystkie tankowania trafiają do `.storage` i są widoczne:
+
+- **Tabela historii** – karta markdown w przykładowym dashboardzie czyta atrybut
+  `fuelings` z `sensor.<auto>_historia_tankowan` (do 500 wpisów, z datą, przebiegiem,
+  litrami, ceną, kwotą, spalaniem i stacją).
+- **Wykresy w czasie** – przy imporcie integracja zapisuje **statystyki
+  długoterminowe z oryginalnymi datami** z pliku (cena/litr, spalanie, przebieg,
+  kwota oraz skumulowane wydatki i litry). ID statystyk: `fuel_manager:<slug>_price`,
+  `..._consumption`, `..._fill_cost`, `..._odometer`, `..._spend`, `..._volume`
+  (slug z nazwy auta, np. `mg_hs`). Dodaj je kartą **Statistics graph** albo
+  obejrzyj w **Narzędzia deweloperskie → Statystyki**.
+
+> Jeśli widzisz tylko „ostatnie tankowanie” i podsumowanie – to znaczy, że
+> patrzysz na stany sensorów. Pełny dziennik jest w tabeli historii i na wykresach
+> statystyk (wymaga dodania kart z `examples/lovelace/`).
+
 ## 🚗🚙 Więcej niż jedno auto
 
 Po prostu **dodaj integrację ponownie** dla każdego auta (Dodaj integrację →

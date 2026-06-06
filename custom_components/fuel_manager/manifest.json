@@ -1,7 +1,7 @@
 {
   "domain": "fuel_manager",
   "name": "Fuel Manager (Tankowania)",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "documentation": "https://github.com/yourusername/ha-fuel-manager",
   "issue_tracker": "https://github.com/yourusername/ha-fuel-manager/issues",
   "dependencies": [],
@@ -11,5 +11,8 @@
   "requirements": [],
   "iot_class": "local_polling",
   "integration_type": "service",
-  "config_flow": true
+  "config_flow": true,
+  "after_dependencies": [
+    "recorder"
+  ]
 }

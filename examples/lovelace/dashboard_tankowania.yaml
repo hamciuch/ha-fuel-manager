@@ -89,3 +89,30 @@ cards:
       {% for f in state_attr(p ~ 'historia_tankowan', 'fuelings') or [] -%}
       | {{ f.timestamp[:16] | replace('T',' ') }} | {{ f.odometer | round(0) }} | {{ f.fuel }} | {{ f.price_per_liter }} | {{ f.total_cost }} | {{ f.consumption if f.consumption else '–' }} | {{ f.station_name }} |
       {% endfor %}
+
+  # --- WYKRESY W CZASIE (statystyki z datami z pliku) -----------------------
+  # Statystyki mają stałe ID per auto: fuel_manager:<slug>_<seria>.
+  # Poniżej dla "MG HS" (slug mg_hs). Dla innego auta zmień slug lub zduplikuj.
+  - type: statistics-graph
+    title: Cena/litr i spalanie w czasie
+    period: month
+    stat_types:
+      - mean
+    entities:
+      - fuel_manager:mg_hs_price
+      - fuel_manager:mg_hs_consumption
+  - type: statistics-graph
+    title: Przebieg w czasie
+    period: month
+    stat_types:
+      - mean
+    entities:
+      - fuel_manager:mg_hs_odometer
+  - type: statistics-graph
+    title: Wydatki na paliwo (skumulowane)
+    period: month
+    stat_types:
+      - change
+    entities:
+      - fuel_manager:mg_hs_spend
+      - fuel_manager:mg_hs_volume

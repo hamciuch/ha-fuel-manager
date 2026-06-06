@@ -19,12 +19,15 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.util import slugify
 
 from .const import (
+    CONF_CURRENCY,
     CONF_DEVICE_TRACKER,
     CONF_PHONE_TRACKER,
     CONF_STATION_RADIUS,
     CONF_USE_OVERPASS,
+    DEFAULT_CURRENCY,
     DEFAULT_OVERPASS_RADIUS,
     DEFAULT_STATION_RADIUS,
     DOMAIN,
@@ -39,6 +42,7 @@ from .const import (
 from .data import FuelData
 from .fuelio import export_fuelio, parse_fuelio
 from .stations import find_overpass_stations, haversine
+from .statistics import async_rebuild_statistics
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -134,6 +138,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     _register_services(hass)
+
+    # odbuduj statystyki czasowe z zapisanych danych (np. po aktualizacji)
+    if data.fuelings:
+        await _rebuild_stats(hass, hass.data[DOMAIN][entry.entry_id])
     return True
 
 
@@ -230,6 +238,19 @@ def _notify_update(hass: HomeAssistant, entry_id: str) -> None:
     async_dispatcher_send(hass, SIGNAL_UPDATE.format(entry_id=entry_id))
 
 
+async def _rebuild_stats(hass: HomeAssistant, store: dict[str, Any]) -> None:
+    """Przebudowuje statystyki czasowe pojazdu po zmianie danych."""
+    entry: ConfigEntry = store["entry"]
+    data: FuelData = store["data"]
+    currency = entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY)
+    try:
+        await async_rebuild_statistics(
+            hass, slugify(entry.title), entry.title, currency, data.fuelings
+        )
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.warning("Nie udało się przebudować statystyk: %s", err)
+
+
 def _path_allowed(hass: HomeAssistant, path: str) -> bool:
     """Czy ścieżka jest dozwolona do odczytu/zapisu.
 
@@ -309,6 +330,7 @@ def _register_services(hass: HomeAssistant) -> None:
         }
         new_id = await data.async_add(fueling)
         _notify_update(hass, entry.entry_id)
+        await _rebuild_stats(hass, d)
         _LOGGER.info("Dodano tankowanie %s (%s)", new_id, entry.title)
         return {"id": new_id, "station": station_name or "", "fueling": fueling}
 
@@ -319,6 +341,7 @@ def _register_services(hass: HomeAssistant) -> None:
         if not ok:
             raise HomeAssistantError(f"Nie znaleziono tankowania id={call.data['id']}")
         _notify_update(hass, d["entry"].entry_id)
+        await _rebuild_stats(hass, d)
 
     async def handle_delete(call: ServiceCall) -> None:
         d = _resolve_entry(hass, call.data.get("vehicle"))
@@ -326,6 +349,7 @@ def _register_services(hass: HomeAssistant) -> None:
         if not ok:
             raise HomeAssistantError(f"Nie znaleziono tankowania id={call.data['id']}")
         _notify_update(hass, d["entry"].entry_id)
+        await _rebuild_stats(hass, d)
 
     async def handle_import(call: ServiceCall) -> ServiceResponse:
         d = _resolve_entry(hass, call.data.get("vehicle"))
@@ -349,6 +373,7 @@ def _register_services(hass: HomeAssistant) -> None:
         parsed = await hass.async_add_executor_job(parse_fuelio, content)
         added = await d["data"].async_import(parsed["fuelings"])
         _notify_update(hass, d["entry"].entry_id)
+        await _rebuild_stats(hass, d)
         _LOGGER.info("Zaimportowano %s tankowań do %s", added, d["entry"].title)
         return {"imported": added, "total": len(d["data"].fuelings)}
 
