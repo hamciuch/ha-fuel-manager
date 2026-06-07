@@ -1,4 +1,4 @@
-# >>> Wklej jako nowy element NA KOŃCU listy 'views:' (Edytor surowej konfiguracji)
+# Wklej jako element listy 'views:'
   - title: Tankowania
     path: tankowania
     icon: mdi:gas-station
@@ -124,44 +124,93 @@
           - entity: sensor.mg_ehs_ostatnie_spalanie
             name: Spalanie
 
-      # ----- WYKRESY W CZASIE (statystyki z datami z importu) -------------------
-      # WAŻNE: days_to_show, inaczej karta pokaże tylko ostatnie 30 dni!
-      - type: statistics-graph
-        title: Cena za litr w czasie
-        days_to_show: 730
-        period: month
-        stat_types:
-          - mean
-        entities:
-          - fuel_manager:mg_ehs_price
+      # ----- WYKRESY INTERAKTYWNE (ApexCharts) ----------------------------------
+      # Wymaga karty "ApexCharts Card" z HACS (Frontend). Czyta listę tankowań
+      # z atrybutu sensora -> każdy punkt to jedno tankowanie, najazd = szczegóły.
+      - type: custom:apexcharts-card
+        graph_span: 600d
+        header:
+          show: true
+          title: Spalanie · cena · kwota
+          show_states: false
+        yaxis:
+          - id: lewa
+            min: 0
+            decimals: 1
+          - id: prawa
+            opposite: true
+            min: 0
+            decimals: 2
+        series:
+          - entity: sensor.mg_ehs_historia_tankowan
+            name: Spalanie (L/100km)
+            unit: " L/100km"
+            type: line
+            yaxis_id: lewa
+            stroke_width: 2
+            curve: smooth
+            data_generator: >
+              return (entity.attributes.fuelings || [])
+                .filter(f => f.consumption)
+                .map(f => [ new Date(f.timestamp).getTime(), f.consumption ])
+                .sort((a,b) => a[0]-b[0]);
+          - entity: sensor.mg_ehs_historia_tankowan
+            name: Cena (zł/L)
+            unit: " zł/L"
+            type: line
+            yaxis_id: prawa
+            stroke_width: 2
+            curve: smooth
+            data_generator: >
+              return (entity.attributes.fuelings || [])
+                .map(f => [ new Date(f.timestamp).getTime(), f.price_per_liter ])
+                .sort((a,b) => a[0]-b[0]);
+          - entity: sensor.mg_ehs_historia_tankowan
+            name: Kwota (zł)
+            unit: " zł"
+            type: column
+            yaxis_id: prawa
+            opacity: 0.25
+            data_generator: >
+              return (entity.attributes.fuelings || [])
+                .map(f => [ new Date(f.timestamp).getTime(), f.total_cost ])
+                .sort((a,b) => a[0]-b[0]);
+        apex_config:
+          chart:
+            height: 300
+          markers:
+            size: 4
+          stroke:
+            width: [2, 2, 0]
+          tooltip:
+            shared: true
+            x:
+              format: "dd MMM yyyy HH:mm"
 
-      - type: statistics-graph
-        title: Spalanie w czasie
-        days_to_show: 730
-        period: month
-        stat_types:
-          - mean
-        entities:
-          - fuel_manager:mg_ehs_consumption
-
-      - type: statistics-graph
-        title: Przebieg w czasie
-        days_to_show: 730
-        period: month
-        stat_types:
-          - mean
-        entities:
-          - fuel_manager:mg_ehs_odometer
-
-      - type: statistics-graph
-        title: Wydatki i litry na miesiąc
-        days_to_show: 730
-        period: month
-        stat_types:
-          - change
-        entities:
-          - fuel_manager:mg_ehs_spend
-          - fuel_manager:mg_ehs_volume
+      - type: custom:apexcharts-card
+        graph_span: 600d
+        header:
+          show: true
+          title: Przebieg
+          show_states: false
+        series:
+          - entity: sensor.mg_ehs_historia_tankowan
+            name: Przebieg (km)
+            unit: " km"
+            type: line
+            stroke_width: 2
+            data_generator: >
+              return (entity.attributes.fuelings || [])
+                .map(f => [ new Date(f.timestamp).getTime(), f.odometer ])
+                .sort((a,b) => a[0]-b[0]);
+        apex_config:
+          chart:
+            height: 240
+          markers:
+            size: 4
+          tooltip:
+            x:
+              format: "dd MMM yyyy"
 
       # ----- PEŁNA HISTORIA (jak dziennik w Fuelio) -----------------------------
       - type: markdown

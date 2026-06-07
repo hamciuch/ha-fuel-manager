@@ -154,6 +154,7 @@ cards:
     series:
       - entity: sensor.mg_ehs_historia_tankowan
         name: Spalanie (L/100km)
+        unit: " L/100km"
         type: line
         yaxis_id: lewa
         stroke_width: 2
@@ -165,6 +166,7 @@ cards:
             .sort((a,b) => a[0]-b[0]);
       - entity: sensor.mg_ehs_historia_tankowan
         name: Cena (zł/L)
+        unit: " zł/L"
         type: line
         yaxis_id: prawa
         stroke_width: 2
@@ -175,6 +177,7 @@ cards:
             .sort((a,b) => a[0]-b[0]);
       - entity: sensor.mg_ehs_historia_tankowan
         name: Kwota (zł)
+        unit: " zł"
         type: column
         yaxis_id: prawa
         opacity: 0.25
@@ -203,6 +206,7 @@ cards:
     series:
       - entity: sensor.mg_ehs_historia_tankowan
         name: Przebieg (km)
+        unit: " km"
         type: line
         stroke_width: 2
         data_generator: >
