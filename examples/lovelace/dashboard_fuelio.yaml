@@ -12,7 +12,6 @@
 title: Tankowania
 path: tankowania
 icon: mdi:gas-station
-type: masonry
 cards:
 
   # ----- NAGŁÓWEK + KLUCZOWE LICZBY (podąża za wybranym autem) ---------------
