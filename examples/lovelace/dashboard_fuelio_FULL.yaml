@@ -1,0 +1,178 @@
+title: Tankowania
+views:
+  - title: Tankowania
+    path: tankowania
+    icon: mdi:gas-station
+    cards:
+
+      # ----- NAGŁÓWEK + KLUCZOWE LICZBY (podąża za wybranym autem) ---------------
+      - type: markdown
+        content: >
+          {% set slug = states('input_select.fuel_vehicle') | slugify %}
+          {% set p = 'sensor.' ~ slug ~ '_' %}
+          ## ⛽ {{ states('input_select.fuel_vehicle') }}
+
+          🚗 **{{ states(p ~ 'ostatni_przebieg') }}** km  ·  ⛽ śr.
+          **{{ states(p ~ 'srednie_spalanie') }}** L/100km  ·  💸
+          **{{ states(p ~ 'srednia_cena_litr') }}** zł/L  ·  📈
+          **{{ states(p ~ 'koszt_na_km') }}** zł/km
+
+          Łącznie: **{{ states(p ~ 'suma_kosztow_paliwa') }}** zł ·
+          **{{ states(p ~ 'suma_zatankowanego_paliwa') }}** L ·
+          **{{ states(p ~ 'liczba_tankowan') }}** tankowań
+
+      # ----- FORMULARZ: NOWE TANKOWANIE -----------------------------------------
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "### ➕ Nowe tankowanie"
+          - type: entities
+            show_header_toggle: false
+            state_color: true
+            entities:
+              - entity: input_select.fuel_vehicle
+                name: Auto
+                icon: mdi:car
+              - type: divider
+              - entity: input_datetime.fuel_datetime
+                name: Data i czas
+              - entity: script.fuel_set_now
+                name: Ustaw czas na teraz
+                icon: mdi:clock-outline
+              - type: divider
+              - entity: input_number.fuel_odometer
+                name: Przebieg (km)
+              - entity: input_number.fuel_liters
+                name: Litry
+              - entity: input_number.fuel_price_per_liter
+                name: Cena/litr
+              - entity: input_number.fuel_total_cost
+                name: Kwota całkowita
+              - entity: input_select.fuel_type
+                name: Rodzaj paliwa
+              - entity: input_boolean.fuel_full_tank
+                name: Pełny bak
+
+          - type: markdown
+            content: "### 📍 Stacja"
+          - type: entities
+            entities:
+              - entity: sensor.mg_ehs_najblizsza_stacja
+                name: Najbliższa (wykryta)
+                icon: mdi:map-marker-radius
+              - entity: input_select.fuel_station
+                name: Wybór stacji
+              - entity: input_text.fuel_manual_station
+                name: Lub wpisz ręcznie
+              - entity: input_boolean.fuel_use_car_fallback
+                name: Zapasowo lokalizacja auta
+              - entity: input_text.fuel_notes
+                name: Notatki
+
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Szukaj stacji
+                icon: mdi:map-search
+                show_state: false
+                tap_action:
+                  action: call-service
+                  service: script.fuel_find_stations
+              - type: button
+                name: ZAPISZ
+                icon: mdi:content-save-check
+                tap_action:
+                  action: call-service
+                  service: script.fuel_submit
+
+      # ----- WSKAŹNIKI (gauge) --------------------------------------------------
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            entity: sensor.mg_ehs_srednie_spalanie
+            name: Śr. spalanie
+            unit: L/100km
+            min: 0
+            max: 15
+            needle: true
+            severity:
+              green: 0
+              yellow: 7
+              red: 10
+          - type: gauge
+            entity: sensor.mg_ehs_ostatnie_spalanie
+            name: Ostatnie
+            unit: L/100km
+            min: 0
+            max: 15
+            needle: true
+            severity:
+              green: 0
+              yellow: 7
+              red: 10
+
+      # ----- OSTATNIE TANKOWANIE ------------------------------------------------
+      - type: glance
+        title: Ostatnie tankowanie
+        columns: 4
+        entities:
+          - entity: sensor.mg_ehs_ostatni_przebieg
+            name: Przebieg
+          - entity: sensor.mg_ehs_ostatnia_cena_litr
+            name: Cena/L
+          - entity: sensor.mg_ehs_ostatnia_kwota
+            name: Kwota
+          - entity: sensor.mg_ehs_ostatnie_spalanie
+            name: Spalanie
+
+      # ----- WYKRESY W CZASIE (statystyki z datami z importu) -------------------
+      # WAŻNE: days_to_show, inaczej karta pokaże tylko ostatnie 30 dni!
+      - type: statistics-graph
+        title: Cena za litr w czasie
+        days_to_show: 730
+        period: month
+        stat_types:
+          - mean
+        entities:
+          - fuel_manager:mg_ehs_price
+
+      - type: statistics-graph
+        title: Spalanie w czasie
+        days_to_show: 730
+        period: month
+        stat_types:
+          - mean
+        entities:
+          - fuel_manager:mg_ehs_consumption
+
+      - type: statistics-graph
+        title: Przebieg w czasie
+        days_to_show: 730
+        period: month
+        stat_types:
+          - mean
+        entities:
+          - fuel_manager:mg_ehs_odometer
+
+      - type: statistics-graph
+        title: Wydatki i litry na miesiąc
+        days_to_show: 730
+        period: month
+        stat_types:
+          - change
+        entities:
+          - fuel_manager:mg_ehs_spend
+          - fuel_manager:mg_ehs_volume
+
+      # ----- PEŁNA HISTORIA (jak dziennik w Fuelio) -----------------------------
+      - type: markdown
+        content: >
+          {% set slug = states('input_select.fuel_vehicle') | slugify %}
+          {% set p = 'sensor.' ~ slug ~ '_' %}
+          ### 📒 Historia tankowań
+
+          | Data | Przebieg | Litry | Cena/L | Kwota | L/100km | Stacja |
+          | --- | ---: | ---: | ---: | ---: | ---: | --- |
+          {% for f in state_attr(p ~ 'historia_tankowan', 'fuelings') or [] -%}
+          | {{ f.timestamp[:16] | replace('T',' ') }} | {{ f.odometer | round(0) }} | {{ f.fuel }} | {{ f.price_per_liter }} | {{ f.total_cost }} | {{ f.consumption if f.consumption else '–' }} | {{ f.station_name }} |
+          {% endfor %}
