@@ -1,5 +1,4 @@
-# >>> Wklej to jako NOWY element NA KOŃCU listy 'views:'
-# >>> w: panel -> ołówek (Edytuj) -> trzy kropki -> Edytuj surową konfigurację (Raw configuration editor)
+# >>> Wklej jako nowy element NA KOŃCU listy 'views:' (Edytor surowej konfiguracji)
   - title: Tankowania
     path: tankowania
     icon: mdi:gas-station
@@ -168,11 +167,7 @@
       - type: markdown
         content: >
           {% set slug = states('input_select.fuel_vehicle') | slugify %}
-          {% set p = 'sensor.' ~ slug ~ '_' %}
-          ### 📒 Historia tankowań
-
-          | Data | Przebieg | Litry | Cena/L | Kwota | L/100km | Stacja |
-          | --- | ---: | ---: | ---: | ---: | ---: | --- |
-          {% for f in state_attr(p ~ 'historia_tankowan', 'fuelings') or [] -%}
-          | {{ f.timestamp[:16] | replace('T',' ') }} | {{ f.odometer | round(0) }} | {{ f.fuel }} | {{ f.price_per_liter }} | {{ f.total_cost }} | {{ f.consumption if f.consumption else '–' }} | {{ f.station_name }} |
-          {% endfor %}
+          {% set rows = state_attr('sensor.' ~ slug ~ '_historia_tankowan', 'fuelings') or [] %}
+          {% set ns = namespace(t='\n## 📒 Historia tankowań (' ~ rows|count ~ ')\n\n') %}
+          {% for f in rows %}{% set ns.t = ns.t ~ '- **' ~ (f.timestamp[:16]|replace('T',' ')) ~ '** · ' ~ (f.odometer|round(0)) ~ ' km · ' ~ f.fuel ~ ' L · ' ~ f.price_per_liter ~ ' zł/L · ' ~ f.total_cost ~ ' zł · ' ~ (f.consumption if f.consumption else '–') ~ ' L/100km' ~ (' · ' ~ f.station_name if f.station_name else '') ~ '\n' %}{% endfor %}
+          {{ ns.t }}
