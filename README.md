@@ -93,6 +93,13 @@ Wszystkie tankowania trafiają do `.storage` i są widoczne:
 > patrzysz na stany sensorów. Pełny dziennik jest w tabeli historii i na wykresach
 > statystyk (wymaga dodania kart z `examples/lovelace/`).
 
+
+> **Nie widać historii na wykresie?** Karta `statistics-graph` domyślnie pokazuje
+> tylko ostatnie 30 dni – ustaw `days_to_show: 730`. Slug w ID statystyk musi
+> pasować do nazwy auta (np. „MG EHS” → `fuel_manager:mg_ehs_...`). Możesz ręcznie
+> przeliczyć statystyki serwisem `fuel_manager.rebuild_statistics` – zwróci, ile
+> punktów zapisał. Ponowny import/przeliczenie nie tworzy duplikatów.
+
 ## 🚗🚙 Więcej niż jedno auto
 
 Po prostu **dodaj integrację ponownie** dla każdego auta (Dodaj integrację →

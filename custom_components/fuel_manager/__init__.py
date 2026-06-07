@@ -37,6 +37,7 @@ from .const import (
     SERVICE_EXPORT_FUELIO,
     SERVICE_FIND_STATIONS,
     SERVICE_IMPORT_FUELIO,
+    SERVICE_REBUILD_STATS,
     SIGNAL_UPDATE,
 )
 from .data import FuelData
@@ -113,6 +114,8 @@ FIND_SCHEMA = vol.Schema(
         vol.Optional("target_input_select"): cv.entity_id,
     }
 )
+
+REBUILD_SCHEMA = vol.Schema({**_VEHICLE})
 
 
 # ---- Setup ----------------------------------------------------------------
@@ -248,7 +251,7 @@ async def _rebuild_stats(hass: HomeAssistant, store: dict[str, Any]) -> None:
             hass, slugify(entry.title), entry.title, currency, data.fuelings
         )
     except Exception as err:  # noqa: BLE001
-        _LOGGER.warning("Nie udało się przebudować statystyk: %s", err)
+        _LOGGER.exception("Nie udało się przebudować statystyk: %s", err)
 
 
 def _path_allowed(hass: HomeAssistant, path: str) -> bool:
@@ -442,6 +445,21 @@ def _register_services(hass: HomeAssistant) -> None:
             )
         return {"stations": stations, "count": len(stations)}
 
+    async def handle_rebuild(call: ServiceCall) -> ServiceResponse:
+        d = _resolve_entry(hass, call.data.get("vehicle"))
+        entry: ConfigEntry = d["entry"]
+        data: FuelData = d["data"]
+        currency = entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY)
+        points = await async_rebuild_statistics(
+            hass, slugify(entry.title), entry.title, currency, data.fuelings
+        )
+        return {
+            "vehicle": entry.title,
+            "slug": slugify(entry.title),
+            "fuelings": len(data.fuelings),
+            "points_written": points,
+        }
+
     hass.services.async_register(
         DOMAIN, SERVICE_ADD_FUELING, handle_add, ADD_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
@@ -460,5 +478,9 @@ def _register_services(hass: HomeAssistant) -> None:
     )
     hass.services.async_register(
         DOMAIN, SERVICE_FIND_STATIONS, handle_find, FIND_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_REBUILD_STATS, handle_rebuild, REBUILD_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
     )

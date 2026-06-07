@@ -33,25 +33,34 @@ async def async_rebuild_statistics(
     vehicle_name: str,
     currency: str,
     fuelings: list[dict[str, Any]],
-) -> None:
-    """Buduje i importuje statystyki zewnętrzne dla pojazdu."""
+) -> int:
+    """Buduje i importuje statystyki zewnętrzne dla pojazdu.
+
+    Zwraca liczbę zapisanych punktów statystyk (suma po wszystkich seriach).
+    """
+    from homeassistant.components.recorder.models import (
+        StatisticData,
+        StatisticMetaData,
+    )
+    from homeassistant.components.recorder.statistics import (
+        async_add_external_statistics,
+    )
+
+    # HA 2026+ preferuje mean_type zamiast has_mean (has_mean działa do 2026.11).
     try:
-        from homeassistant.components.recorder.models import (
-            StatisticData,
-            StatisticMetaData,
-        )
-        from homeassistant.components.recorder.statistics import (
-            async_add_external_statistics,
-        )
+        from homeassistant.components.recorder.models import StatisticMeanType
+
+        _mean_arith = StatisticMeanType.ARITHMETIC
+        _mean_none = StatisticMeanType.NONE
     except ImportError:
-        _LOGGER.warning("Recorder niedostępny – pomijam import statystyk.")
-        return
+        StatisticMeanType = None  # type: ignore[assignment]
+        _mean_arith = _mean_none = None
 
     chrono = sorted(
         (f for f in fuelings if f.get("timestamp")), key=lambda x: x["timestamp"]
     )
     if not chrono:
-        return
+        return 0
 
     # definicje serii: klucz -> (nazwa, jednostka, czy_suma, pole)
     series = {
@@ -63,16 +72,20 @@ async def async_rebuild_statistics(
         "volume": (f"{vehicle_name} – litry (skum.)", "L", True, "fuel"),
     }
 
+    total_points = 0
     for sid, (name, unit, is_sum, key) in series.items():
         statistic_id = f"{DOMAIN}:{slug}_{sid}"
-        metadata = StatisticMetaData(
-            has_mean=not is_sum,
-            has_sum=is_sum,
-            name=name,
-            source=DOMAIN,
-            statistic_id=statistic_id,
-            unit_of_measurement=unit,
-        )
+        meta: dict[str, Any] = {
+            "has_mean": not is_sum,
+            "has_sum": is_sum,
+            "name": name,
+            "source": DOMAIN,
+            "statistic_id": statistic_id,
+            "unit_of_measurement": unit,
+        }
+        if StatisticMeanType is not None:
+            meta["mean_type"] = _mean_none if is_sum else _mean_arith
+        metadata = StatisticMetaData(**meta)
 
         rows: dict[Any, StatisticData] = {}
         running = 0.0
@@ -95,6 +108,10 @@ async def async_rebuild_statistics(
         if rows:
             ordered = [rows[k] for k in sorted(rows)]
             async_add_external_statistics(hass, metadata, ordered)
+            total_points += len(ordered)
 
-    _LOGGER.info("Zaimportowano statystyki czasowe dla %s (%d tankowań)",
-                 vehicle_name, len(chrono))
+    _LOGGER.info(
+        "Zaimportowano statystyki czasowe dla %s: %d punktów z %d tankowań",
+        vehicle_name, total_points, len(chrono),
+    )
+    return total_points

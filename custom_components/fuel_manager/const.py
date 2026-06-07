@@ -34,6 +34,7 @@ SERVICE_DELETE_FUELING = "delete_fueling"
 SERVICE_IMPORT_FUELIO = "import_fuelio"
 SERVICE_EXPORT_FUELIO = "export_fuelio"
 SERVICE_FIND_STATIONS = "find_nearby_stations"
+SERVICE_REBUILD_STATS = "rebuild_statistics"
 
 # Atrybuty pojedynczego tankowania
 ATTR_ID = "id"

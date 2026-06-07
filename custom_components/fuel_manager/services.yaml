@@ -252,3 +252,13 @@ find_nearby_stations:
       selector:
         entity:
           domain: input_select
+
+rebuild_statistics:
+  name: Przelicz statystyki czasowe
+  description: Buduje statystyki długoterminowe z dat z historii (do wykresów w czasie). Zwraca liczbę zapisanych punktów.
+  fields:
+    vehicle:
+      name: Pojazd
+      required: false
+      selector:
+        text:

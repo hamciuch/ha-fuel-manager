@@ -92,9 +92,11 @@ cards:
 
   # --- WYKRESY W CZASIE (statystyki z datami z pliku) -----------------------
   # Statystyki mają stałe ID per auto: fuel_manager:<slug>_<seria>.
-  # Poniżej dla "MG HS" (slug mg_hs). Dla innego auta zmień slug lub zduplikuj.
+  # WAŻNE: zmień 'mg_hs' na slug SWOJEGO auta! Np. auto "MG EHS" -> 'mg_ehs'.
+  # Slug podejrzysz w Narzędzia deweloperskie -> Statystyki (fuel_manager:<slug>_...).
   - type: statistics-graph
     title: Cena/litr i spalanie w czasie
+    days_to_show: 730        # pokaż 2 lata (domyślnie karta bierze tylko 30 dni!)
     period: month
     stat_types:
       - mean
@@ -103,6 +105,7 @@ cards:
       - fuel_manager:mg_hs_consumption
   - type: statistics-graph
     title: Przebieg w czasie
+    days_to_show: 730
     period: month
     stat_types:
       - mean
@@ -110,6 +113,7 @@ cards:
       - fuel_manager:mg_hs_odometer
   - type: statistics-graph
     title: Wydatki na paliwo (skumulowane)
+    days_to_show: 730
     period: month
     stat_types:
       - change
