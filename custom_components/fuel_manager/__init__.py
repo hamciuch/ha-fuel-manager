@@ -70,6 +70,7 @@ ADD_SCHEMA = vol.Schema(
         vol.Optional("longitude"): vol.Coerce(float),
         vol.Optional("location_entity"): cv.entity_id,
         vol.Optional("notes"): cv.string,
+        vol.Optional("use_person_location", default=True): cv.boolean,
         vol.Optional("use_phone_location", default=True): cv.boolean,
         vol.Optional("use_car_location", default=False): cv.boolean,
     }
@@ -108,6 +109,7 @@ FIND_SCHEMA = vol.Schema(
         vol.Optional("latitude"): vol.Coerce(float),
         vol.Optional("longitude"): vol.Coerce(float),
         vol.Optional("location_entity"): cv.entity_id,
+        vol.Optional("use_person_location", default=True): cv.boolean,
         vol.Optional("use_phone_location", default=True): cv.boolean,
         vol.Optional("use_car_location", default=False): cv.boolean,
         vol.Optional("radius", default=DEFAULT_OVERPASS_RADIUS): vol.Coerce(int),
@@ -198,15 +200,34 @@ def _entity_coords(hass: HomeAssistant, entity_id: str | None) -> tuple[float, f
     return float(lat), float(lon)
 
 
+def _person_coords(hass: HomeAssistant, user_id: str | None) -> tuple[float, float] | None:
+    """Współrzędne osoby (encja person) przypisanej do zalogowanego użytkownika,
+    który wywołał akcję. Pozwala wielu domownikom tankować ze swoich telefonów."""
+    if not user_id:
+        return None
+    for state in hass.states.async_all("person"):
+        if state.attributes.get("user_id") == user_id:
+            lat = state.attributes.get("latitude")
+            lon = state.attributes.get("longitude")
+            if lat is not None and lon is not None:
+                return float(lat), float(lon)
+    return None
+
+
 def _resolve_location(
-    hass: HomeAssistant, entry: ConfigEntry, data: dict[str, Any]
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    data: dict[str, Any],
+    user_id: str | None = None,
 ) -> tuple[float, float] | None:
     """Ustala lokalizację wg priorytetu.
 
     1) jawne latitude/longitude w wywołaniu,
-    2) jawna encja `location_entity` (np. konkretny telefon),
-    3) TELEFON wprowadzający tankowanie (phone_tracker) – źródło główne,
-    4) AUTO (device_tracker) – opcjonalny zapas (use_car_location=true).
+    2) jawna encja `location_entity` (np. wybrana osoba/telefon),
+    3) OSOBA wywołująca akcję (person zalogowanego użytkownika) – obsługuje
+       wielu domowników tankujących z własnych telefonów (use_person_location),
+    4) TELEFON skonfigurowany w opcjach (phone_tracker),
+    5) AUTO (device_tracker) – opcjonalny zapas (use_car_location=true).
     """
     lat = data.get("latitude")
     lon = data.get("longitude")
@@ -215,6 +236,11 @@ def _resolve_location(
 
     if data.get("location_entity"):
         coords = _entity_coords(hass, data["location_entity"])
+        if coords:
+            return coords
+
+    if data.get("use_person_location", True):
+        coords = _person_coords(hass, user_id)
         if coords:
             return coords
 
@@ -302,7 +328,7 @@ def _register_services(hass: HomeAssistant) -> None:
 
         # 1) ustal lokalizację: jawna -> encja -> telefon -> auto
         if lat is None or lon is None:
-            coords = _resolve_location(hass, entry, call.data)
+            coords = _resolve_location(hass, entry, call.data, call.context.user_id)
             if coords:
                 lat, lon = coords
 
@@ -403,7 +429,7 @@ def _register_services(hass: HomeAssistant) -> None:
         lat = call.data.get("latitude")
         lon = call.data.get("longitude")
         if lat is None or lon is None:
-            coords = _resolve_location(hass, entry, call.data)
+            coords = _resolve_location(hass, entry, call.data, call.context.user_id)
             if not coords:
                 raise HomeAssistantError(
                     "Brak lokalizacji – podaj latitude/longitude, location_entity "

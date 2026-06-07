@@ -131,9 +131,16 @@ add_fueling:
           domain:
             - person
             - device_tracker
+    use_person_location:
+      name: Użyj lokalizacji osoby tankującej
+      description: Weź GPS z encji person zalogowanego użytkownika, który dodaje tankowanie (obsługa wielu domowników).
+      required: false
+      default: true
+      selector:
+        boolean:
     use_phone_location:
-      name: Użyj lokalizacji telefonu
-      description: Pobierz GPS ze skonfigurowanego telefonu (główne źródło), gdy brak współrzędnych.
+      name: Użyj lokalizacji telefonu (z opcji)
+      description: Pobierz GPS ze skonfigurowanego w opcjach telefonu, gdy brak innych źródeł.
       required: false
       default: true
       selector:
@@ -223,8 +230,14 @@ find_nearby_stations:
           domain:
             - person
             - device_tracker
+    use_person_location:
+      name: Użyj lokalizacji osoby tankującej
+      required: false
+      default: true
+      selector:
+        boolean:
     use_phone_location:
-      name: Użyj lokalizacji telefonu
+      name: Użyj lokalizacji telefonu (z opcji)
       required: false
       default: true
       selector:

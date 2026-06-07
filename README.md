@@ -121,6 +121,13 @@ Przykładowy formularz/dashboard są **wieloautowe** – wybierasz auto w
 `input_select.fuel_vehicle` (wpisz w nim nazwy aut dokładnie jak w integracji),
 a statystyki i historia automatycznie podążają za wybranym autem.
 
+
+### 👥 Wiele osób tankujących
+
+Lokalizacja jest brana automatycznie z encji `person` **użytkownika, który wywołał akcję** (np. nacisnął „Zapisz”/„Szukaj stacji” w aplikacji HA). Każdy domownik zalogowany na swoim telefonie używa więc własnego GPS – bez żadnego wyboru. Kolejność źródeł: jawne GPS → `location_entity` → osoba wywołująca (`use_person_location`) → telefon z opcji (`phone_tracker`) → auto.
+
+Na wspólnym tablecie (nie zalogowanym jako konkretna osoba) możesz wskazać osobę ręcznie, podając `location_entity: person.imie` w wywołaniu serwisu.
+
 ## 📥 Import z Fuelio
 
 ```yaml
