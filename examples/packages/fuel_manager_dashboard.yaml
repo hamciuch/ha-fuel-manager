@@ -17,8 +17,8 @@ input_select:
     name: Auto
     icon: mdi:car
     options:
-      - "MG HS"
-      # - "Skoda Octavia"   # <- dodaj kolejne auta tutaj
+      - "MG EHS"
+      # - "Skoda Octavia"   # <- dodaj kolejne auta tutaj (dokładnie jak nazwa w integracji)
   fuel_type:
     name: Rodzaj paliwa
     icon: mdi:gas-station
