@@ -152,6 +152,13 @@ Nieznane kody są zachowywane i wyświetlane jako „Paliwo &lt;kod&gt;”.
 - Sekcje `## Costs` z Fuelio nie są importowane (integracja dotyczy paliwa).
 - Overpass to publiczny endpoint OSM (fair-use); można go wyłączyć w opcjach.
 
+## Ikona i wersje w HACS
+
+Jeśli HACS pokazuje skróty commitów zamiast `1.1.0` albo „icon not available” –
+to normalne dla świeżego repo bez Release'ów i bez wpisu w `home-assistant/brands`.
+Jak to naprawić (publikacja Release + PR z ikoną) opisuje [BRANDS.md](BRANDS.md).
+Gotowe pliki ikon są w `assets/brands/`.
+
 ## Licencja
 
 MIT — patrz [LICENSE](LICENSE).
