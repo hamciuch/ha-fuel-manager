@@ -104,12 +104,11 @@ script:
     alias: "Tankowanie: znajdź stacje"
     icon: mdi:map-search
     sequence:
-      # (opcjonalnie) poproś telefon o świeży GPS – PODMIEŃ na swoje notify.mobile_app_*
-      # i usuń ten blok, jeśli nie chcesz wymuszać aktualizacji lokalizacji.
-      - service: notify.mobile_app_telefon
-        data:
-          message: "request_location_update"
-      - delay: "00:00:03"
+      # (OPCJONALNIE) świeży GPS z telefonu – ODKOMENTUJ i podmień na swój notify.mobile_app_*:
+      # - service: notify.mobile_app_TWOJ_TELEFON
+      #   data:
+      #     message: "request_location_update"
+      # - delay: "00:00:03"
       - service: fuel_manager.find_nearby_stations
         data:
           vehicle: "{{ states('input_select.fuel_vehicle') }}"
