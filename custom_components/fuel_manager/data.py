@@ -147,8 +147,7 @@ class FuelData:
         total_cost = sum(f.get("total_cost") or 0.0 for f in self.fuelings)
         odos = [f["odometer"] for f in self.fuelings if f.get("odometer")]
         total_distance = (max(odos) - min(odos)) if len(odos) >= 2 else 0.0
-        cons = [f["consumption"] for f in self.fuelings if f.get("consumption")]
-        avg_cons = round(sum(cons) / len(cons), 2) if cons else None
+        avg_cons = self._avg_consumption()
         return {
             "count": len(self.fuelings),
             "total_fuel": round(total_fuel, 2),
@@ -158,3 +157,30 @@ class FuelData:
             "total_distance": round(total_distance, 1),
             "cost_per_km": round(total_cost / total_distance, 3) if total_distance else None,
         }
+
+    def _avg_consumption(self) -> float | None:
+        """Średnia ważona dystansem (jak Fuelio): całe zużyte paliwo / cały
+        dystans między pełnymi bakami × 100. Pomija paliwo sprzed 1. pełnego baku
+        (nieznany stan początkowy)."""
+        chrono = sorted(self.fuelings, key=lambda x: x.get("odometer") or 0)
+        prev_full: float | None = None
+        liters_since = 0.0
+        total_fuel = 0.0
+        total_dist = 0.0
+        for f in chrono:
+            odo = f.get("odometer")
+            full = f.get("full")
+            if full and odo is not None and prev_full is None:
+                # pierwszy pełny bak: punkt startowy, odrzuć paliwo sprzed niego
+                prev_full = odo
+                liters_since = 0.0
+                continue
+            liters_since += f.get("fuel") or 0.0
+            if full and odo is not None and prev_full is not None and odo > prev_full:
+                total_dist += odo - prev_full
+                total_fuel += liters_since
+                liters_since = 0.0
+                prev_full = odo
+        if total_dist <= 0:
+            return None
+        return round(total_fuel / total_dist * 100, 2)
