@@ -86,6 +86,12 @@ views:
         cards:
           - type: markdown
             content: "### ✏️ Edytuj / popraw tankowanie"
+          - type: button
+            name: Edytuj ostatnie tankowanie
+            icon: mdi:clock-fast
+            tap_action:
+              action: call-service
+              service: script.fuel_edit_last
           - type: entities
             entities:
               - entity: input_select.fuel_edit_target

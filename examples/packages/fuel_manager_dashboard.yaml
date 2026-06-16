@@ -276,7 +276,7 @@ script:
             {% set rows = (state_attr('sensor.' ~ slug ~ '_historia_tankowan','fuelings') or [])[:60] %}
             {% set ns = namespace(o=[]) %}
             {% for f in rows %}
-            {% set ns.o = ns.o + [ (f.timestamp[:16]|replace('T',' ')) ~ ' · ' ~ (f.odometer|round(0)) ~ ' km · ' ~ (f.station_name or '—') ] %}
+            {% set ns.o = ns.o + [ (f.timestamp[:16]|replace('T',' ')) ~ ' · ' ~ (f.odometer|round(0)|int) ~ ' km · ' ~ (f.station_name or '—') ] %}
             {% endfor %}
             {{ ns.o if ns.o else ['— brak tankowań —'] }}
 
@@ -284,42 +284,71 @@ script:
   fuel_edit_load:
     alias: "Edycja: wczytaj"
     icon: mdi:download
-    variables:
-      slug: "{{ states('input_select.fuel_vehicle') | slugify }}"
-      sel: "{{ states('input_select.fuel_edit_target') }}"
-      rows: "{{ state_attr('sensor.' ~ slug ~ '_historia_tankowan','fuelings') or [] }}"
-      match: >
-        {% set ns = namespace(f=none) %}
-        {% for f in rows %}
-        {% set label = (f.timestamp[:16]|replace('T',' ')) ~ ' · ' ~ (f.odometer|round(0)) ~ ' km · ' ~ (f.station_name or '—') %}
-        {% if label == sel %}{% set ns.f = f %}{% endif %}
-        {% endfor %}
-        {{ ns.f }}
     sequence:
       - service: input_boolean.turn_on
         target: { entity_id: input_boolean.fuel_edit_lock }
+      # 1) ustal ID na podstawie wybranej etykiety z listy
+      - service: input_text.set_value
+        target: { entity_id: input_text.fuel_edit_id }
+        data:
+          value: >
+            {% set sel = states('input_select.fuel_edit_target') %}
+            {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
+            {% set ns = namespace(id='') %}
+            {% for f in rows %}
+            {% set label = (f.timestamp[:16]|replace('T',' ')) ~ ' · ' ~ (f.odometer|round(0)|int) ~ ' km · ' ~ (f.station_name or '—') %}
+            {% if label == sel %}{% set ns.id = f.id %}{% endif %}
+            {% endfor %}
+            {{ ns.id }}
+      # 2) wczytaj pola NIEZALEŻNIE po ID (świeży odczyt z sensora)
       - choose:
-          - conditions: "{{ match not in [none, 'None'] and match }}"
+          - conditions: "{{ states('input_text.fuel_edit_id') | length > 3 }}"
             sequence:
-              - service: input_text.set_value
-                target: { entity_id: input_text.fuel_edit_id }
-                data: { value: "{{ match.id }}" }
               - service: input_number.set_value
                 target: { entity_id: input_number.fuel_edit_odometer }
-                data: { value: "{{ match.odometer }}" }
+                data:
+                  value: >
+                    {% set id = states('input_text.fuel_edit_id') %}
+                    {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
+                    {% set f = rows | selectattr('id','eq',id) | list | first %}
+                    {{ f.odometer if f else 0 }}
               - service: input_number.set_value
                 target: { entity_id: input_number.fuel_edit_fuel }
-                data: { value: "{{ match.fuel }}" }
+                data:
+                  value: >
+                    {% set id = states('input_text.fuel_edit_id') %}
+                    {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
+                    {% set f = rows | selectattr('id','eq',id) | list | first %}
+                    {{ f.fuel if f else 0 }}
               - service: input_number.set_value
                 target: { entity_id: input_number.fuel_edit_price }
-                data: { value: "{{ match.price_per_liter | default(0) }}" }
+                data:
+                  value: >
+                    {% set id = states('input_text.fuel_edit_id') %}
+                    {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
+                    {% set f = rows | selectattr('id','eq',id) | list | first %}
+                    {{ f.price_per_liter if (f and f.price_per_liter) else 0 }}
               - service: input_number.set_value
                 target: { entity_id: input_number.fuel_edit_total }
-                data: { value: "{{ match.total_cost | default(0) }}" }
+                data:
+                  value: >
+                    {% set id = states('input_text.fuel_edit_id') %}
+                    {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
+                    {% set f = rows | selectattr('id','eq',id) | list | first %}
+                    {{ f.total_cost if (f and f.total_cost) else 0 }}
               - service: input_text.set_value
                 target: { entity_id: input_text.fuel_edit_station }
-                data: { value: "{{ match.station_name }}" }
-              - service: "input_boolean.turn_{{ 'on' if match.full else 'off' }}"
+                data:
+                  value: >
+                    {% set id = states('input_text.fuel_edit_id') %}
+                    {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
+                    {% set f = rows | selectattr('id','eq',id) | list | first %}
+                    {{ f.station_name if f else '' }}
+              - service: >
+                  {% set id = states('input_text.fuel_edit_id') %}
+                  {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
+                  {% set f = rows | selectattr('id','eq',id) | list | first %}
+                  input_boolean.turn_{{ 'on' if (f and f.full) else 'off' }}
                 target: { entity_id: input_boolean.fuel_edit_full }
         default:
           - service: input_text.set_value
@@ -328,6 +357,23 @@ script:
       - delay: "00:00:01"
       - service: input_boolean.turn_off
         target: { entity_id: input_boolean.fuel_edit_lock }
+
+  # --- EDYCJA: wczytaj OSTATNIE tankowanie (skrót) --------------------------
+  fuel_edit_last:
+    alias: "Edycja: wczytaj ostatnie"
+    icon: mdi:clock-fast
+    sequence:
+      - service: script.fuel_edit_refresh
+      - delay: "00:00:01"
+      - service: input_select.select_option
+        target: { entity_id: input_select.fuel_edit_target }
+        data:
+          option: >
+            {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
+            {% set f = rows[0] if rows else none %}
+            {{ (f.timestamp[:16]|replace('T',' ')) ~ ' · ' ~ (f.odometer|round(0)|int) ~ ' km · ' ~ (f.station_name or '—') if f else '— brak tankowań —' }}
+      - delay: "00:00:01"
+      - service: script.fuel_edit_load
 
   # --- EDYCJA: zapisz zmiany ------------------------------------------------
   fuel_edit_save:
