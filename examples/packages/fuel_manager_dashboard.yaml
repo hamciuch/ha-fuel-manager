@@ -365,32 +365,6 @@ script:
       - service: script.fuel_edit_refresh
 
 automation:
-  # auto-wczytanie po wyborze tankowania z listy
-  - alias: "Fuel: wczytaj wybrane do edycji"
-    id: fuel_edit_autoload
-    trigger:
-      - platform: state
-        entity_id: input_select.fuel_edit_target
-    condition:
-      - condition: template
-        value_template: "{{ trigger.to_state.state not in ['— odśwież listę —','— brak tankowań —'] }}"
-    action:
-      - service: script.fuel_edit_load
-    mode: restart
-
-  # odśwież listę przy starcie i po zmianie auta
-  - alias: "Fuel: odśwież listę edycji"
-    id: fuel_edit_autorefresh
-    trigger:
-      - platform: homeassistant
-        event: start
-      - platform: state
-        entity_id: input_select.fuel_vehicle
-    action:
-      - delay: "00:00:03"
-      - service: script.fuel_edit_refresh
-    mode: restart
-
   # --- AUTOWYLICZANIE: litry × cena/litr = kwota (i odwrotnie) ---------------
   # Podaj dwa dowolne pola, trzecie wyliczy się samo. Zabezpieczone przed pętlą
   # (ustawia wartość tylko, gdy po zaokrągleniu różni się od obecnej).
