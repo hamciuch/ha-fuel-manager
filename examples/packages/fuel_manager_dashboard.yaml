@@ -119,6 +119,9 @@ input_boolean:
   fuel_edit_full:
     name: Edycja – pełny bak
     icon: mdi:fuel
+  fuel_edit_lock:
+    name: Edycja – blokada przeliczania (wewn.)
+    icon: mdi:lock
 
 input_datetime:
   fuel_datetime:
@@ -293,6 +296,8 @@ script:
         {{ ns.f }}
     sequence:
       - condition: "{{ match not in [none, 'None'] and match }}"
+      - service: input_boolean.turn_on
+        target: { entity_id: input_boolean.fuel_edit_lock }
       - service: input_text.set_value
         target: { entity_id: input_text.fuel_edit_id }
         data: { value: "{{ match.id }}" }
@@ -313,6 +318,9 @@ script:
         data: { value: "{{ match.station_name }}" }
       - service: "input_boolean.turn_{{ 'on' if match.full else 'off' }}"
         target: { entity_id: input_boolean.fuel_edit_full }
+      - delay: "00:00:01"
+      - service: input_boolean.turn_off
+        target: { entity_id: input_boolean.fuel_edit_lock }
 
   # --- EDYCJA: zapisz zmiany ------------------------------------------------
   fuel_edit_save:
@@ -443,3 +451,74 @@ automation:
                 data:
                   value: >
                     {{ (states('input_number.fuel_total_cost')|float / states('input_number.fuel_price_per_liter')|float) | round(2) }}
+
+  # --- AUTOWYLICZANIE W EDYTORZE (zapis nadal ręczny, na przycisk) -----------
+  - alias: "Fuel edit: kwota z litrów i ceny"
+    id: fuel_edit_calc_total
+    mode: single
+    trigger:
+      - platform: state
+        entity_id:
+          - input_number.fuel_edit_fuel
+          - input_number.fuel_edit_price
+    condition:
+      - condition: state
+        entity_id: input_boolean.fuel_edit_lock
+        state: "off"
+      - condition: numeric_state
+        entity_id: input_number.fuel_edit_fuel
+        above: 0
+      - condition: numeric_state
+        entity_id: input_number.fuel_edit_price
+        above: 0
+      - condition: template
+        value_template: >
+          {{ (states('input_number.fuel_edit_fuel')|float(0) * states('input_number.fuel_edit_price')|float(0)) | round(2)
+             != states('input_number.fuel_edit_total')|float(0) | round(2) }}
+    action:
+      - service: input_number.set_value
+        target: { entity_id: input_number.fuel_edit_total }
+        data:
+          value: >
+            {{ (states('input_number.fuel_edit_fuel')|float * states('input_number.fuel_edit_price')|float) | round(2) }}
+
+  - alias: "Fuel edit: cena/litr lub litry z kwoty"
+    id: fuel_edit_calc_from_total
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: input_number.fuel_edit_total
+    condition:
+      - condition: state
+        entity_id: input_boolean.fuel_edit_lock
+        state: "off"
+    action:
+      - choose:
+          - conditions:
+              - condition: numeric_state
+                entity_id: input_number.fuel_edit_fuel
+                above: 0
+              - condition: template
+                value_template: >
+                  {{ (states('input_number.fuel_edit_total')|float(0) / states('input_number.fuel_edit_fuel')|float(1)) | round(3)
+                     != states('input_number.fuel_edit_price')|float(0) | round(3) }}
+            sequence:
+              - service: input_number.set_value
+                target: { entity_id: input_number.fuel_edit_price }
+                data:
+                  value: >
+                    {{ (states('input_number.fuel_edit_total')|float / states('input_number.fuel_edit_fuel')|float) | round(3) }}
+          - conditions:
+              - condition: numeric_state
+                entity_id: input_number.fuel_edit_price
+                above: 0
+              - condition: template
+                value_template: >
+                  {{ (states('input_number.fuel_edit_total')|float(0) / states('input_number.fuel_edit_price')|float(1)) | round(2)
+                     != states('input_number.fuel_edit_fuel')|float(0) | round(2) }}
+            sequence:
+              - service: input_number.set_value
+                target: { entity_id: input_number.fuel_edit_fuel }
+                data:
+                  value: >
+                    {{ (states('input_number.fuel_edit_total')|float / states('input_number.fuel_edit_price')|float) | round(2) }}
