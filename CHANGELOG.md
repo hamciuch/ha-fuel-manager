@@ -1,0 +1,96 @@
+# Changelog
+
+Wszystkie istotne zmiany w projekcie. Format wzorowany na
+[Keep a Changelog](https://keepachangelog.com/pl/1.1.0/),
+wersjonowanie [SemVer](https://semver.org/lang/pl/).
+
+## [1.2.0] – 2026-06-07
+
+### Dodane
+- **Edytor tankowań w dashboardzie** – wybór wpisu z listy, automatyczne
+  wczytanie wartości, poprawa i zapis na przycisk (oraz usuwanie). Zapis pozostaje
+  ręczny; podczas wczytywania działa blokada przeliczania, by nie nadpisać danych.
+- **Autowyliczanie w formularzu** (dodawanie i edycja): podaj dowolne dwa z pól
+  litry / cena za litr / kwota, trzecie policzy się samo. Zabezpieczone przed
+  zapętleniem.
+- **Interaktywne wykresy ApexCharts** – każdy punkt to jedno tankowanie, dymek po
+  najechaniu pokazuje datę i wartości (spalanie, cena, kwota, przebieg).
+
+### Naprawione
+- Jednostki na wykresach: serie mają własne jednostki (L/100km, zł/L, zł, km)
+  zamiast dziedziczonej „szt.”.
+- Renderowanie historii w karcie markdown (jawne nowe linie zamiast sklejonej tabeli).
+
+## [1.1.3] – 2026-06-07
+
+### Dodane
+- **Lokalizacja dla wielu osób** – pozycja brana automatycznie z encji `person`
+  użytkownika, który wywołał akcję (każdy domownik tankuje ze swojego telefonu).
+  Kolejność: jawne GPS → `location_entity` → osoba wywołująca → telefon z opcji → auto.
+
+## [1.1.2] – 2026-06-07
+
+### Naprawione
+- **Średnie spalanie** liczone metodą Fuelio: ważone dystansem
+  (całe paliwo / cały dystans × 100), z pominięciem paliwa sprzed pierwszego
+  pełnego baku. Wcześniej była to zawyżona średnia arytmetyczna z l/100km.
+
+## [1.1.1] – 2026-06-07
+
+### Dodane
+- Serwis `fuel_manager.rebuild_statistics` – ręczne przeliczenie statystyk,
+  zwraca liczbę zapisanych punktów.
+- Obsługa `mean_type` w statystykach (zgodność z Home Assistant 2026+).
+
+### Naprawione
+- Wykresy w czasie pokazywały tylko bieżący miesiąc – w przykładach dodano
+  `days_to_show`.
+- Głośniejsze logowanie błędów przy przeliczaniu statystyk (pełny ślad).
+
+## [1.1.0] – 2026-06-05
+
+### Dodane
+- **Statystyki długoterminowe z datami z importu** – cena/litr, spalanie,
+  przebieg, kwota oraz skumulowane wydatki i litry trafiają na oś czasu z
+  oryginalnymi datami (widoczne w Narzędzia deweloperskie → Statystyki).
+- Pełna historia tankowań w atrybucie sensora (do 500 wpisów).
+- Pliki ikon (gotowe pod `home-assistant/brands`) + `BRANDS.md`.
+- Wieloautowe przykłady dashboardu (selektor auta, dynamiczne statystyki).
+
+### Zmienione
+- `after_dependencies: recorder` w manifeście.
+
+## [1.0.2] – 2026-06-05
+
+### Naprawione
+- Import/eksport działa z `/config`, `/config/www` i `/media`; rozwiązywanie
+  dowiązań symbolicznych (poprawne na HAOS).
+
+## [1.0.1] – 2026-06-05
+
+### Naprawione
+- Import/eksport z katalogu `/config` bez potrzeby `allowlist_external_dirs`.
+
+## [1.0.0] – 2026-06-05
+
+### Dodane
+- Pierwsze wydanie integracji `fuel_manager` (config flow, trwałe składowanie,
+  sensory).
+- Serwisy: `add_fueling`, `edit_fueling`, `delete_fueling`, `import_fuelio`,
+  `export_fuelio`, `find_nearby_stations`.
+- Import/eksport Fuelio (CSV) z deduplikacją po GUID; spalanie liczone jak Fuelio.
+- Najbliższa stacja: „snap” do znanej z historii + wyszukiwanie w OpenStreetMap
+  (Overpass, bez klucza API).
+- Lokalizacja z telefonu jako główne źródło, auto jako opcjonalny zapas.
+- Obsługa wielu pojazdów (osobny wpis integracji na auto).
+- Przykładowy pakiet (helpery + skrypty) i dashboard.
+- Metadane HACS, licencja MIT, CI (hassfest + HACS), workflow Release.
+
+[1.2.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.2.0
+[1.1.3]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.3
+[1.1.2]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.2
+[1.1.1]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.1
+[1.1.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.0
+[1.0.2]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.0.2
+[1.0.1]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.0.1
+[1.0.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.0.0

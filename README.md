@@ -173,6 +173,10 @@ to normalne dla świeżego repo bez Release'ów i bez wpisu w `home-assistant/br
 Jak to naprawić (publikacja Release + PR z ikoną) opisuje [BRANDS.md](BRANDS.md).
 Gotowe pliki ikon są w `assets/brands/`.
 
+## Historia zmian
+
+Pełna lista zmian: [CHANGELOG.md](CHANGELOG.md).
+
 ## Licencja
 
 MIT — patrz [LICENSE](LICENSE).
