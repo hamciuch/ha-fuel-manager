@@ -5,12 +5,10 @@ views:
     icon: mdi:gas-station
     cards:
 
-      # ----- NAGŁÓWEK + KLUCZOWE LICZBY (podąża za wybranym autem) ---------------
       - type: markdown
         content: >
           {% set slug = states('input_select.fuel_vehicle') | slugify %}
           {% set p = 'sensor.' ~ slug ~ '_' %}
-          ## ⛽ {{ states('input_select.fuel_vehicle') }}
 
           🚗 **{{ states(p ~ 'ostatni_przebieg') }}** km  ·  ⛽ śr.
           **{{ states(p ~ 'srednie_spalanie') }}** L/100km  ·  💸
@@ -21,7 +19,6 @@ views:
           **{{ states(p ~ 'suma_zatankowanego_paliwa') }}** L ·
           **{{ states(p ~ 'liczba_tankowan') }}** tankowań
 
-      # ----- FORMULARZ: NOWE TANKOWANIE -----------------------------------------
       - type: vertical-stack
         cards:
           - type: markdown
@@ -85,7 +82,6 @@ views:
                   action: call-service
                   service: script.fuel_submit
 
-      # ----- EDYCJA / POPRAWA TANKOWANIA ----------------------------------------
       - type: vertical-stack
         cards:
           - type: markdown
@@ -94,12 +90,20 @@ views:
             entities:
               - entity: input_select.fuel_edit_target
                 name: Wybierz tankowanie
-          - type: button
-            name: Odśwież listę
-            icon: mdi:refresh
-            tap_action:
-              action: call-service
-              service: script.fuel_edit_refresh
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Odśwież listę
+                icon: mdi:refresh
+                tap_action:
+                  action: call-service
+                  service: script.fuel_edit_refresh
+              - type: button
+                name: Wczytaj wybrane
+                icon: mdi:download
+                tap_action:
+                  action: call-service
+                  service: script.fuel_edit_load
           - type: entities
             title: Wczytane wartości (popraw i zapisz)
             entities:
@@ -130,7 +134,6 @@ views:
                   action: call-service
                   service: script.fuel_edit_delete
 
-      # ----- WSKAŹNIKI (gauge) --------------------------------------------------
       - type: horizontal-stack
         cards:
           - type: gauge
@@ -156,7 +159,6 @@ views:
               yellow: 7
               red: 10
 
-      # ----- OSTATNIE TANKOWANIE ------------------------------------------------
       - type: glance
         title: Ostatnie tankowanie
         columns: 4
@@ -170,9 +172,6 @@ views:
           - entity: sensor.mg_ehs_ostatnie_spalanie
             name: Spalanie
 
-      # ----- WYKRESY INTERAKTYWNE (ApexCharts) ----------------------------------
-      # Wymaga karty "ApexCharts Card" z HACS (Frontend). Czyta listę tankowań
-      # z atrybutu sensora -> każdy punkt to jedno tankowanie, najazd = szczegóły.
       - type: custom:apexcharts-card
         graph_span: 600d
         header:
@@ -258,7 +257,6 @@ views:
             x:
               format: "dd MMM yyyy"
 
-      # ----- PEŁNA HISTORIA (jak dziennik w Fuelio) -----------------------------
       - type: markdown
         content: >
           {% set slug = states('input_select.fuel_vehicle') | slugify %}

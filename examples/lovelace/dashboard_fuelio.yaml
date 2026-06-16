@@ -103,12 +103,20 @@ cards:
         entities:
           - entity: input_select.fuel_edit_target
             name: Wybierz tankowanie
-      - type: button
-        name: Odśwież listę
-        icon: mdi:refresh
-        tap_action:
-          action: call-service
-          service: script.fuel_edit_refresh
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Odśwież listę
+            icon: mdi:refresh
+            tap_action:
+              action: call-service
+              service: script.fuel_edit_refresh
+          - type: button
+            name: Wczytaj wybrane
+            icon: mdi:download
+            tap_action:
+              action: call-service
+              service: script.fuel_edit_load
       - type: entities
         title: Wczytane wartości (popraw i zapisz)
         entities:

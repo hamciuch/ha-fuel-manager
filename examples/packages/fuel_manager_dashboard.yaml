@@ -143,6 +143,7 @@ input_text:
   fuel_edit_id:
     name: Edycja – ID (ukryte)
     max: 80
+    initial: ""
   fuel_edit_station:
     name: Edycja – stacja
     max: 120
@@ -295,29 +296,35 @@ script:
         {% endfor %}
         {{ ns.f }}
     sequence:
-      - condition: "{{ match not in [none, 'None'] and match }}"
       - service: input_boolean.turn_on
         target: { entity_id: input_boolean.fuel_edit_lock }
-      - service: input_text.set_value
-        target: { entity_id: input_text.fuel_edit_id }
-        data: { value: "{{ match.id }}" }
-      - service: input_number.set_value
-        target: { entity_id: input_number.fuel_edit_odometer }
-        data: { value: "{{ match.odometer }}" }
-      - service: input_number.set_value
-        target: { entity_id: input_number.fuel_edit_fuel }
-        data: { value: "{{ match.fuel }}" }
-      - service: input_number.set_value
-        target: { entity_id: input_number.fuel_edit_price }
-        data: { value: "{{ match.price_per_liter | default(0) }}" }
-      - service: input_number.set_value
-        target: { entity_id: input_number.fuel_edit_total }
-        data: { value: "{{ match.total_cost | default(0) }}" }
-      - service: input_text.set_value
-        target: { entity_id: input_text.fuel_edit_station }
-        data: { value: "{{ match.station_name }}" }
-      - service: "input_boolean.turn_{{ 'on' if match.full else 'off' }}"
-        target: { entity_id: input_boolean.fuel_edit_full }
+      - choose:
+          - conditions: "{{ match not in [none, 'None'] and match }}"
+            sequence:
+              - service: input_text.set_value
+                target: { entity_id: input_text.fuel_edit_id }
+                data: { value: "{{ match.id }}" }
+              - service: input_number.set_value
+                target: { entity_id: input_number.fuel_edit_odometer }
+                data: { value: "{{ match.odometer }}" }
+              - service: input_number.set_value
+                target: { entity_id: input_number.fuel_edit_fuel }
+                data: { value: "{{ match.fuel }}" }
+              - service: input_number.set_value
+                target: { entity_id: input_number.fuel_edit_price }
+                data: { value: "{{ match.price_per_liter | default(0) }}" }
+              - service: input_number.set_value
+                target: { entity_id: input_number.fuel_edit_total }
+                data: { value: "{{ match.total_cost | default(0) }}" }
+              - service: input_text.set_value
+                target: { entity_id: input_text.fuel_edit_station }
+                data: { value: "{{ match.station_name }}" }
+              - service: "input_boolean.turn_{{ 'on' if match.full else 'off' }}"
+                target: { entity_id: input_boolean.fuel_edit_full }
+        default:
+          - service: input_text.set_value
+            target: { entity_id: input_text.fuel_edit_id }
+            data: { value: "" }
       - delay: "00:00:01"
       - service: input_boolean.turn_off
         target: { entity_id: input_boolean.fuel_edit_lock }
@@ -327,7 +334,7 @@ script:
     alias: "Edycja: zapisz"
     icon: mdi:content-save-edit
     sequence:
-      - condition: "{{ states('input_text.fuel_edit_id') | length > 5 }}"
+      - condition: "{{ states('input_text.fuel_edit_id') not in ['', 'unknown', 'unavailable'] and (states('input_text.fuel_edit_id') | length) > 5 }}"
       - service: fuel_manager.edit_fueling
         data:
           vehicle: "{{ states('input_select.fuel_vehicle') }}"
@@ -346,7 +353,7 @@ script:
     alias: "Edycja: usuń"
     icon: mdi:delete
     sequence:
-      - condition: "{{ states('input_text.fuel_edit_id') | length > 5 }}"
+      - condition: "{{ states('input_text.fuel_edit_id') not in ['', 'unknown', 'unavailable'] and (states('input_text.fuel_edit_id') | length) > 5 }}"
       - service: fuel_manager.delete_fueling
         data:
           vehicle: "{{ states('input_select.fuel_vehicle') }}"
