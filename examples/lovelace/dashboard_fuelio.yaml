@@ -94,6 +94,51 @@ cards:
               action: call-service
               service: script.fuel_submit
 
+  # ----- EDYCJA / POPRAWA TANKOWANIA ----------------------------------------
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: "### ✏️ Edytuj / popraw tankowanie"
+      - type: entities
+        entities:
+          - entity: input_select.fuel_edit_target
+            name: Wybierz tankowanie
+      - type: button
+        name: Odśwież listę
+        icon: mdi:refresh
+        tap_action:
+          action: call-service
+          service: script.fuel_edit_refresh
+      - type: entities
+        title: Wczytane wartości (popraw i zapisz)
+        entities:
+          - entity: input_number.fuel_edit_odometer
+            name: Przebieg (km)
+          - entity: input_number.fuel_edit_fuel
+            name: Litry
+          - entity: input_number.fuel_edit_price
+            name: Cena/litr
+          - entity: input_number.fuel_edit_total
+            name: Kwota
+          - entity: input_text.fuel_edit_station
+            name: Stacja
+          - entity: input_boolean.fuel_edit_full
+            name: Pełny bak
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: ZAPISZ ZMIANY
+            icon: mdi:content-save-edit
+            tap_action:
+              action: call-service
+              service: script.fuel_edit_save
+          - type: button
+            name: Usuń
+            icon: mdi:delete
+            tap_action:
+              action: call-service
+              service: script.fuel_edit_delete
+
   # ----- WSKAŹNIKI (gauge) --------------------------------------------------
   - type: horizontal-stack
     cards:

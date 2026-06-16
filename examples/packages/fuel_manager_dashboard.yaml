@@ -39,6 +39,12 @@ input_select:
     options:
       - "— najpierw wyszukaj stacje —"
 
+  fuel_edit_target:
+    name: Tankowanie do edycji
+    icon: mdi:pencil
+    options:
+      - "— odśwież listę —"
+
 input_number:
   fuel_odometer:
     name: Przebieg
@@ -73,6 +79,35 @@ input_number:
     icon: mdi:cash-multiple
     mode: box
 
+  fuel_edit_odometer:
+    name: Edycja – przebieg
+    min: 0
+    max: 2000000
+    step: 1
+    unit_of_measurement: km
+    mode: box
+  fuel_edit_fuel:
+    name: Edycja – litry
+    min: 0
+    max: 200
+    step: 0.01
+    unit_of_measurement: L
+    mode: box
+  fuel_edit_price:
+    name: Edycja – cena/litr
+    min: 0
+    max: 50
+    step: 0.001
+    unit_of_measurement: zł/L
+    mode: box
+  fuel_edit_total:
+    name: Edycja – kwota
+    min: 0
+    max: 5000
+    step: 0.01
+    unit_of_measurement: zł
+    mode: box
+
 input_boolean:
   fuel_full_tank:
     name: Pełny bak
@@ -80,6 +115,10 @@ input_boolean:
   fuel_use_car_fallback:
     name: Zapasowo lokalizacja auta
     icon: mdi:car-connected
+
+  fuel_edit_full:
+    name: Edycja – pełny bak
+    icon: mdi:fuel
 
 input_datetime:
   fuel_datetime:
@@ -97,6 +136,13 @@ input_text:
     name: Stacja (ręcznie)
     max: 120
     icon: mdi:gas-station
+
+  fuel_edit_id:
+    name: Edycja – ID (ukryte)
+    max: 80
+  fuel_edit_station:
+    name: Edycja – stacja
+    max: 120
 
 script:
   # --- 1) Wyszukaj pobliskie stacje dla wybranego auta ----------------------
@@ -211,3 +257,121 @@ script:
       - service: input_text.set_value
         target: { entity_id: [input_text.fuel_notes, input_text.fuel_manual_station] }
         data: { value: "" }
+
+  # --- EDYCJA: odśwież listę tankowań do wyboru -----------------------------
+  fuel_edit_refresh:
+    alias: "Edycja: odśwież listę"
+    icon: mdi:refresh
+    sequence:
+      - service: input_select.set_options
+        target:
+          entity_id: input_select.fuel_edit_target
+        data:
+          options: >
+            {% set slug = states('input_select.fuel_vehicle') | slugify %}
+            {% set rows = (state_attr('sensor.' ~ slug ~ '_historia_tankowan','fuelings') or [])[:60] %}
+            {% set ns = namespace(o=[]) %}
+            {% for f in rows %}
+            {% set ns.o = ns.o + [ (f.timestamp[:16]|replace('T',' ')) ~ ' · ' ~ (f.odometer|round(0)) ~ ' km · ' ~ (f.station_name or '—') ] %}
+            {% endfor %}
+            {{ ns.o if ns.o else ['— brak tankowań —'] }}
+
+  # --- EDYCJA: wczytaj wybrane tankowanie do pól ----------------------------
+  fuel_edit_load:
+    alias: "Edycja: wczytaj"
+    icon: mdi:download
+    variables:
+      slug: "{{ states('input_select.fuel_vehicle') | slugify }}"
+      sel: "{{ states('input_select.fuel_edit_target') }}"
+      rows: "{{ state_attr('sensor.' ~ slug ~ '_historia_tankowan','fuelings') or [] }}"
+      match: >
+        {% set ns = namespace(f=none) %}
+        {% for f in rows %}
+        {% set label = (f.timestamp[:16]|replace('T',' ')) ~ ' · ' ~ (f.odometer|round(0)) ~ ' km · ' ~ (f.station_name or '—') %}
+        {% if label == sel %}{% set ns.f = f %}{% endif %}
+        {% endfor %}
+        {{ ns.f }}
+    sequence:
+      - condition: "{{ match not in [none, 'None'] and match }}"
+      - service: input_text.set_value
+        target: { entity_id: input_text.fuel_edit_id }
+        data: { value: "{{ match.id }}" }
+      - service: input_number.set_value
+        target: { entity_id: input_number.fuel_edit_odometer }
+        data: { value: "{{ match.odometer }}" }
+      - service: input_number.set_value
+        target: { entity_id: input_number.fuel_edit_fuel }
+        data: { value: "{{ match.fuel }}" }
+      - service: input_number.set_value
+        target: { entity_id: input_number.fuel_edit_price }
+        data: { value: "{{ match.price_per_liter | default(0) }}" }
+      - service: input_number.set_value
+        target: { entity_id: input_number.fuel_edit_total }
+        data: { value: "{{ match.total_cost | default(0) }}" }
+      - service: input_text.set_value
+        target: { entity_id: input_text.fuel_edit_station }
+        data: { value: "{{ match.station_name }}" }
+      - service: "input_boolean.turn_{{ 'on' if match.full else 'off' }}"
+        target: { entity_id: input_boolean.fuel_edit_full }
+
+  # --- EDYCJA: zapisz zmiany ------------------------------------------------
+  fuel_edit_save:
+    alias: "Edycja: zapisz"
+    icon: mdi:content-save-edit
+    sequence:
+      - condition: "{{ states('input_text.fuel_edit_id') | length > 5 }}"
+      - service: fuel_manager.edit_fueling
+        data:
+          vehicle: "{{ states('input_select.fuel_vehicle') }}"
+          id: "{{ states('input_text.fuel_edit_id') }}"
+          odometer: "{{ states('input_number.fuel_edit_odometer') | float }}"
+          fuel: "{{ states('input_number.fuel_edit_fuel') | float }}"
+          price_per_liter: "{{ states('input_number.fuel_edit_price') | float }}"
+          total_cost: "{{ states('input_number.fuel_edit_total') | float }}"
+          full: "{{ is_state('input_boolean.fuel_edit_full','on') }}"
+          station_name: "{{ states('input_text.fuel_edit_station') }}"
+      - delay: "00:00:01"
+      - service: script.fuel_edit_refresh
+
+  # --- EDYCJA: usuń wybrane tankowanie --------------------------------------
+  fuel_edit_delete:
+    alias: "Edycja: usuń"
+    icon: mdi:delete
+    sequence:
+      - condition: "{{ states('input_text.fuel_edit_id') | length > 5 }}"
+      - service: fuel_manager.delete_fueling
+        data:
+          vehicle: "{{ states('input_select.fuel_vehicle') }}"
+          id: "{{ states('input_text.fuel_edit_id') }}"
+      - service: input_text.set_value
+        target: { entity_id: input_text.fuel_edit_id }
+        data: { value: "" }
+      - delay: "00:00:01"
+      - service: script.fuel_edit_refresh
+
+automation:
+  # auto-wczytanie po wyborze tankowania z listy
+  - alias: "Fuel: wczytaj wybrane do edycji"
+    id: fuel_edit_autoload
+    trigger:
+      - platform: state
+        entity_id: input_select.fuel_edit_target
+    condition:
+      - condition: template
+        value_template: "{{ trigger.to_state.state not in ['— odśwież listę —','— brak tankowań —'] }}"
+    action:
+      - service: script.fuel_edit_load
+    mode: restart
+
+  # odśwież listę przy starcie i po zmianie auta
+  - alias: "Fuel: odśwież listę edycji"
+    id: fuel_edit_autorefresh
+    trigger:
+      - platform: homeassistant
+        event: start
+      - platform: state
+        entity_id: input_select.fuel_vehicle
+    action:
+      - delay: "00:00:03"
+      - service: script.fuel_edit_refresh
+    mode: restart
