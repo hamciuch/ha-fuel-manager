@@ -375,3 +375,71 @@ automation:
       - delay: "00:00:03"
       - service: script.fuel_edit_refresh
     mode: restart
+
+  # --- AUTOWYLICZANIE: litry × cena/litr = kwota (i odwrotnie) ---------------
+  # Podaj dwa dowolne pola, trzecie wyliczy się samo. Zabezpieczone przed pętlą
+  # (ustawia wartość tylko, gdy po zaokrągleniu różni się od obecnej).
+  - alias: "Fuel: kwota z litrów i ceny"
+    id: fuel_calc_total
+    mode: single
+    trigger:
+      - platform: state
+        entity_id:
+          - input_number.fuel_liters
+          - input_number.fuel_price_per_liter
+    condition:
+      - condition: numeric_state
+        entity_id: input_number.fuel_liters
+        above: 0
+      - condition: numeric_state
+        entity_id: input_number.fuel_price_per_liter
+        above: 0
+      - condition: template
+        value_template: >
+          {{ (states('input_number.fuel_liters')|float(0) * states('input_number.fuel_price_per_liter')|float(0)) | round(2)
+             != states('input_number.fuel_total_cost')|float(0) | round(2) }}
+    action:
+      - service: input_number.set_value
+        target: { entity_id: input_number.fuel_total_cost }
+        data:
+          value: >
+            {{ (states('input_number.fuel_liters')|float * states('input_number.fuel_price_per_liter')|float) | round(2) }}
+
+  - alias: "Fuel: cena/litr lub litry z kwoty"
+    id: fuel_calc_from_total
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: input_number.fuel_total_cost
+    action:
+      - choose:
+          # mamy litry -> licz cenę za litr (przypadek: litry + kwota)
+          - conditions:
+              - condition: numeric_state
+                entity_id: input_number.fuel_liters
+                above: 0
+              - condition: template
+                value_template: >
+                  {{ (states('input_number.fuel_total_cost')|float(0) / states('input_number.fuel_liters')|float(1)) | round(3)
+                     != states('input_number.fuel_price_per_liter')|float(0) | round(3) }}
+            sequence:
+              - service: input_number.set_value
+                target: { entity_id: input_number.fuel_price_per_liter }
+                data:
+                  value: >
+                    {{ (states('input_number.fuel_total_cost')|float / states('input_number.fuel_liters')|float) | round(3) }}
+          # nie ma litrów, ale jest cena -> licz litry (przypadek: cena + kwota)
+          - conditions:
+              - condition: numeric_state
+                entity_id: input_number.fuel_price_per_liter
+                above: 0
+              - condition: template
+                value_template: >
+                  {{ (states('input_number.fuel_total_cost')|float(0) / states('input_number.fuel_price_per_liter')|float(1)) | round(2)
+                     != states('input_number.fuel_liters')|float(0) | round(2) }}
+            sequence:
+              - service: input_number.set_value
+                target: { entity_id: input_number.fuel_liters }
+                data:
+                  value: >
+                    {{ (states('input_number.fuel_total_cost')|float / states('input_number.fuel_price_per_liter')|float) | round(2) }}
