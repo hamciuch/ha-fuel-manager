@@ -1,0 +1,402 @@
+title: Tankowania
+views:
+- title: Tankowania
+  path: tankowania
+  icon: mdi:gas-station
+  cards:
+  - type: entities
+    entities:
+    - entity: input_select.fuel_vehicle
+      name: Pojazd
+  - type: vertical-stack
+    cards:
+    - type: markdown
+      content: '### ➕ Nowe tankowanie'
+    - type: entities
+      show_header_toggle: false
+      state_color: true
+      entities:
+      - entity: input_select.fuel_vehicle
+        name: Auto
+        icon: mdi:car
+      - type: divider
+      - entity: input_datetime.fuel_datetime
+        name: Data i czas
+      - entity: script.fuel_set_now
+        name: Ustaw czas na teraz
+        icon: mdi:clock-outline
+      - type: divider
+      - entity: input_number.fuel_odometer
+        name: Przebieg (km)
+      - entity: input_number.fuel_liters
+        name: Litry
+      - entity: input_number.fuel_price_per_liter
+        name: Cena/litr
+      - entity: input_number.fuel_total_cost
+        name: Kwota całkowita
+      - entity: input_select.fuel_type
+        name: Rodzaj paliwa
+      - entity: input_boolean.fuel_full_tank
+        name: Pełny bak
+    - type: markdown
+      content: '### 📍 Stacja'
+    - type: entities
+      entities:
+      - entity: sensor.mg_ehs_najblizsza_stacja
+        name: Najbliższa (wykryta)
+        icon: mdi:map-marker-radius
+      - entity: input_select.fuel_station
+        name: Wybór stacji
+      - entity: input_text.fuel_manual_station
+        name: Lub wpisz ręcznie
+      - entity: input_boolean.fuel_use_car_fallback
+        name: Zapasowo lokalizacja auta
+      - entity: input_text.fuel_notes
+        name: Notatki
+    - type: horizontal-stack
+      cards:
+      - type: button
+        name: Szukaj stacji
+        icon: mdi:map-search
+        show_state: false
+        tap_action:
+          action: call-service
+          service: script.fuel_find_stations
+      - type: button
+        name: ZAPISZ
+        icon: mdi:content-save-check
+        tap_action:
+          action: call-service
+          service: script.fuel_submit
+  - type: vertical-stack
+    cards:
+    - type: markdown
+      content: '### ✏️ Edytuj / popraw tankowanie'
+    - type: button
+      name: Edytuj ostatnie tankowanie
+      icon: mdi:clock-fast
+      tap_action:
+        action: call-service
+        service: script.fuel_edit_last
+    - type: entities
+      entities:
+      - entity: input_select.fuel_edit_target
+        name: Wybierz tankowanie
+    - type: horizontal-stack
+      cards:
+      - type: button
+        name: Odśwież listę
+        icon: mdi:refresh
+        tap_action:
+          action: call-service
+          service: script.fuel_edit_refresh
+      - type: button
+        name: Wczytaj wybrane
+        icon: mdi:download
+        tap_action:
+          action: call-service
+          service: script.fuel_edit_load
+    - type: entities
+      title: Wczytane wartości (popraw i zapisz)
+      entities:
+      - entity: input_number.fuel_edit_odometer
+        name: Przebieg (km)
+      - entity: input_number.fuel_edit_fuel
+        name: Litry
+      - entity: input_number.fuel_edit_price
+        name: Cena/litr
+      - entity: input_number.fuel_edit_total
+        name: Kwota
+      - entity: input_text.fuel_edit_station
+        name: Stacja
+      - entity: input_boolean.fuel_edit_full
+        name: Pełny bak
+    - type: horizontal-stack
+      cards:
+      - type: button
+        name: ZAPISZ ZMIANY
+        icon: mdi:content-save-edit
+        tap_action:
+          action: call-service
+          service: script.fuel_edit_save
+      - type: button
+        name: Usuń
+        icon: mdi:delete
+        tap_action:
+          action: call-service
+          service: script.fuel_edit_delete
+  - type: glance
+    title: Ostatnie tankowanie
+    columns: 4
+    entities:
+    - entity: sensor.mg_ehs_ostatni_przebieg
+      name: Przebieg
+    - entity: sensor.mg_ehs_ostatnia_cena_litr
+      name: Cena/L
+    - entity: sensor.mg_ehs_ostatnia_kwota
+      name: Kwota
+    - entity: sensor.mg_ehs_ostatnie_spalanie
+      name: Spalanie
+  - type: markdown
+    content: '{% set slug = states(''input_select.fuel_vehicle'') | slugify %} {% set rows = state_attr(''sensor.'' ~ slug ~ ''_historia_tankowan'', ''fuelings'') or [] %} {% set ns = namespace(t=''\n## 📒 Historia tankowań ('' ~ rows|count ~ '')\n\n'') %} {% for f in rows %}{% set ns.t = ns.t ~ ''- **'' ~ (f.timestamp[:16]|replace(''T'','' '')) ~ ''** · '' ~ (f.odometer|round(0)) ~ '' km · '' ~ f.fuel ~ '' L · '' ~ f.price_per_liter ~ '' zł/L · '' ~ f.total_cost ~ '' zł · '' ~ (f.consumption if f.consumption else ''–'') ~ '' L/100km'' ~ ('' · '' ~ f.station_name if f.station_name else '''') ~ ''\n'' %}{% endfor %} {{ ns.t }}
+
+      '
+- title: Koszty
+  path: koszty
+  icon: mdi:cash-multiple
+  cards:
+  - type: markdown
+    content: "{%- set s = states('input_select.fuel_vehicle')|slugify -%}\n{%- set a = 'sensor.' ~ s ~ '_analiza' -%}\n## \U0001F4B0 Koszty paliwa\n**Łącznie:** {{ state_attr(a,'total_spend') }} zł  \n**W tym roku ({{ state_attr(a,'this_year') }}):** {{ state_attr(a,'spend_this_year') }} zł  \n**Poprzedni rok ({{ state_attr(a,'prev_year') }}):** {{ state_attr(a,'spend_prev_year') }} zł\n\n**Cena za litr:** min {{ state_attr(a,'min_price') }} · max {{ state_attr(a,'max_price') }} zł/L  \n**Rachunek:** min {{ state_attr(a,'min_bill') }} · max {{ state_attr(a,'max_bill') }} zł  \n**Koszt na km:** śr. {{ state_attr(a,'avg_cost_per_km') }} · min {{ state_attr(a,'min_cost_per_km') }} · max {{ state_attr(a,'max_cost_per_km') }} zł/km  \n**Koszt dzienny (śr.):** {{ state_attr(a,'avg_daily_cost') }} zł/dzień  \n**Liczba tankowań:** {{ state_attr(a,'fill_count') }} · **dni:** {{ state_attr(a,'days_span') }}\n"
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: Wydatki / miesiąc (14 mies.)
+    graph_span: 430d
+    span:
+      end: month
+    series:
+    - entity: sensor.mg_ehs_analiza
+      name: Wydatki / miesiąc (14 mies.)
+      type: column
+      unit: ' zł'
+      color: var(--warning-color)
+      data_generator: return (entity.attributes.monthly || []).map(m => [m.ts, m.spend]);
+    apex_config:
+      xaxis:
+        labels:
+          datetimeFormatter:
+            month: MMM yy
+      plotOptions:
+        bar:
+          columnWidth: 60%
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: Wydatki / rok
+    graph_span: 1825d
+    span:
+      end: year
+    series:
+    - entity: sensor.mg_ehs_analiza
+      name: Wydatki / rok
+      type: column
+      unit: ' zł'
+      color: var(--error-color)
+      data_generator: return Object.entries(entity.attributes.spend_by_year || {}).map(([y,v]) => [new Date(parseInt(y),0,1).getTime(), v]);
+    apex_config:
+      xaxis:
+        labels:
+          datetimeFormatter:
+            year: yyyy
+      plotOptions:
+        bar:
+          columnWidth: 45%
+- title: Odległość
+  path: odleglosc
+  icon: mdi:map-marker-distance
+  cards:
+  - type: markdown
+    content: "{%- set s = states('input_select.fuel_vehicle')|slugify -%}\n{%- set a = 'sensor.' ~ s ~ '_analiza' -%}\n## \U0001F6E3️ Odległość\n**Łącznie:** {{ state_attr(a,'total_distance') }} km  \n**W tym roku ({{ state_attr(a,'this_year') }}):** {{ state_attr(a,'distance_this_year') }} km  \n**Poprzedni rok ({{ state_attr(a,'prev_year') }}):** {{ state_attr(a,'distance_prev_year') }} km\n\n**Dystans między tankowaniami:** śr. {{ state_attr(a,'avg_segment_distance') }} · min {{ state_attr(a,'min_segment_distance') }} · max {{ state_attr(a,'max_segment_distance') }} km  \n**Średnio dziennie:** {{ state_attr(a,'avg_daily_distance') }} km/dzień\n"
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: Kilometry / miesiąc (14 mies.)
+    graph_span: 430d
+    span:
+      end: month
+    series:
+    - entity: sensor.mg_ehs_analiza
+      name: Kilometry / miesiąc (14 mies.)
+      type: column
+      unit: ' km'
+      color: var(--info-color)
+      data_generator: return (entity.attributes.monthly || []).map(m => [m.ts, m.dist]);
+    apex_config:
+      xaxis:
+        labels:
+          datetimeFormatter:
+            month: MMM yy
+      plotOptions:
+        bar:
+          columnWidth: 60%
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: Kilometry / rok
+    graph_span: 1825d
+    span:
+      end: year
+    series:
+    - entity: sensor.mg_ehs_analiza
+      name: Kilometry / rok
+      type: column
+      unit: ' km'
+      color: var(--primary-color)
+      data_generator: return Object.entries(entity.attributes.distance_by_year || {}).map(([y,v]) => [new Date(parseInt(y),0,1).getTime(), v]);
+    apex_config:
+      xaxis:
+        labels:
+          datetimeFormatter:
+            year: yyyy
+      plotOptions:
+        bar:
+          columnWidth: 45%
+- title: Tankowanie
+  path: tankowanie-litry
+  icon: mdi:fuel
+  cards:
+  - type: markdown
+    content: "{%- set s = states('input_select.fuel_vehicle')|slugify -%}\n{%- set a = 'sensor.' ~ s ~ '_analiza' -%}\n## ⛽ Tankowanie (paliwo)\n**Łącznie:** {{ state_attr(a,'total_fuel') }} L  \n**W tym roku ({{ state_attr(a,'this_year') }}):** {{ state_attr(a,'fuel_this_year') }} L  \n**Poprzedni rok ({{ state_attr(a,'prev_year') }}):** {{ state_attr(a,'fuel_prev_year') }} L\n\n**Jednorazowe tankowanie:** śr. {{ state_attr(a,'avg_fill') }} · min {{ state_attr(a,'min_fill') }} · max {{ state_attr(a,'max_fill') }} L  \n**Średnio dziennie:** {{ state_attr(a,'avg_daily_fuel') }} L/dzień\n"
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: Litry / miesiąc (14 mies.)
+    graph_span: 430d
+    span:
+      end: month
+    series:
+    - entity: sensor.mg_ehs_analiza
+      name: Litry / miesiąc (14 mies.)
+      type: column
+      unit: ' L'
+      color: var(--success-color)
+      data_generator: return (entity.attributes.monthly || []).map(m => [m.ts, m.fuel]);
+    apex_config:
+      xaxis:
+        labels:
+          datetimeFormatter:
+            month: MMM yy
+      plotOptions:
+        bar:
+          columnWidth: 60%
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: Litry / rok
+    graph_span: 1825d
+    span:
+      end: year
+    series:
+    - entity: sensor.mg_ehs_analiza
+      name: Litry / rok
+      type: column
+      unit: ' L'
+      color: var(--accent-color)
+      data_generator: return Object.entries(entity.attributes.fuel_by_year || {}).map(([y,v]) => [new Date(parseInt(y),0,1).getTime(), v]);
+    apex_config:
+      xaxis:
+        labels:
+          datetimeFormatter:
+            year: yyyy
+      plotOptions:
+        bar:
+          columnWidth: 45%
+- title: Przegląd
+  path: przeglad
+  icon: mdi:view-dashboard
+  cards:
+  - type: markdown
+    content: '{% set slug = states(''input_select.fuel_vehicle'') | slugify %} {% set p = ''sensor.'' ~ slug ~ ''_'' %}
+
+      🚗 **{{ states(p ~ ''ostatni_przebieg'') }}** km  ·  ⛽ śr. **{{ states(p ~ ''srednie_spalanie'') }}** L/100km  ·  💸 **{{ states(p ~ ''srednia_cena_litr'') }}** zł/L  ·  📈 **{{ states(p ~ ''koszt_na_km'') }}** zł/km
+
+      Łącznie: **{{ states(p ~ ''suma_kosztow_paliwa'') }}** zł · **{{ states(p ~ ''suma_zatankowanego_paliwa'') }}** L · **{{ states(p ~ ''liczba_tankowan'') }}** tankowań
+
+      '
+  - type: horizontal-stack
+    cards:
+    - type: gauge
+      entity: sensor.mg_ehs_srednie_spalanie
+      name: Śr. spalanie
+      unit: L/100km
+      min: 0
+      max: 15
+      needle: true
+      severity:
+        green: 0
+        yellow: 7
+        red: 10
+    - type: gauge
+      entity: sensor.mg_ehs_ostatnie_spalanie
+      name: Ostatnie
+      unit: L/100km
+      min: 0
+      max: 15
+      needle: true
+      severity:
+        green: 0
+        yellow: 7
+        red: 10
+  - type: custom:apexcharts-card
+    graph_span: 600d
+    header:
+      show: true
+      title: Spalanie · cena · kwota
+      show_states: false
+    yaxis:
+    - id: lewa
+      min: 0
+      decimals: 1
+    - id: prawa
+      opposite: true
+      min: 0
+      decimals: 2
+    series:
+    - entity: sensor.mg_ehs_historia_tankowan
+      name: Spalanie (L/100km)
+      unit: ' L/100km'
+      type: line
+      yaxis_id: lewa
+      stroke_width: 2
+      curve: smooth
+      data_generator: "return (entity.attributes.fuelings || [])\n  .filter(f => f.consumption)\n  .map(f => [ new Date(f.timestamp).getTime(), f.consumption ])\n  .sort((a,b) => a[0]-b[0]);\n"
+    - entity: sensor.mg_ehs_historia_tankowan
+      name: Cena (zł/L)
+      unit: ' zł/L'
+      type: line
+      yaxis_id: prawa
+      stroke_width: 2
+      curve: smooth
+      data_generator: "return (entity.attributes.fuelings || [])\n  .map(f => [ new Date(f.timestamp).getTime(), f.price_per_liter ])\n  .sort((a,b) => a[0]-b[0]);\n"
+    - entity: sensor.mg_ehs_historia_tankowan
+      name: Kwota (zł)
+      unit: ' zł'
+      type: column
+      yaxis_id: prawa
+      opacity: 0.25
+      data_generator: "return (entity.attributes.fuelings || [])\n  .map(f => [ new Date(f.timestamp).getTime(), f.total_cost ])\n  .sort((a,b) => a[0]-b[0]);\n"
+    apex_config:
+      chart:
+        height: 300
+      markers:
+        size: 4
+      stroke:
+        width:
+        - 2
+        - 2
+        - 0
+      tooltip:
+        shared: true
+        x:
+          format: dd MMM yyyy HH:mm
+  - type: custom:apexcharts-card
+    graph_span: 600d
+    header:
+      show: true
+      title: Przebieg
+      show_states: false
+    series:
+    - entity: sensor.mg_ehs_historia_tankowan
+      name: Przebieg (km)
+      unit: ' km'
+      type: line
+      stroke_width: 2
+      data_generator: "return (entity.attributes.fuelings || [])\n  .map(f => [ new Date(f.timestamp).getTime(), f.odometer ])\n  .sort((a,b) => a[0]-b[0]);\n"
+    apex_config:
+      chart:
+        height: 240
+      markers:
+        size: 4
+      tooltip:
+        x:
+          format: dd MMM yyyy

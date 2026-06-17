@@ -11,6 +11,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .analytics import compute_analytics
 from .const import DOMAIN, SIGNAL_UPDATE, fuel_type_name
 from .data import FuelData
 
@@ -61,6 +62,7 @@ async def async_setup_entry(
                        unit="zł/km", icon="mdi:road-variant"),
         NearestStationSensor(entry, data, store),
         HistorySensor(entry, data),
+        AnalyticsSensor(entry, data),
     ]
     async_add_entities(sensors)
 
@@ -223,3 +225,23 @@ class HistorySensor(_Base):
                 }
             )
         return {"fuelings": rows}
+
+
+class AnalyticsSensor(_Base):
+    """Zbiorczy sensor statystyk (koszty, dystans, paliwo) – dane w atrybutach."""
+
+    _attr_icon = "mdi:chart-box"
+    _attr_native_unit_of_measurement = "zł"
+
+    def __init__(self, entry: ConfigEntry, data: FuelData) -> None:
+        super().__init__(entry, data)
+        self._attr_unique_id = f"{entry.entry_id}_analytics"
+        self._attr_name = "Analiza"
+
+    @property
+    def native_value(self) -> Any:
+        return compute_analytics(self._data.fuelings).get("total_spend", 0)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return compute_analytics(self._data.fuelings)

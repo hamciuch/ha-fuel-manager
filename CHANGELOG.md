@@ -4,6 +4,17 @@ Wszystkie istotne zmiany w projekcie. Format wzorowany na
 [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/),
 wersjonowanie [SemVer](https://semver.org/lang/pl/).
 
+## [1.3.0] – 2026-06-07
+
+### Dodane
+- **Sensor „Analiza”** (`sensor.<auto>_analiza`) liczący komplet statystyk w atrybutach:
+  koszty/dystans/paliwo łącznie, w tym roku i w poprzednich latach, min/max ceny i
+  rachunków, koszt na km (śr./min/max), koszty dzienne oraz dane miesięczne (14 mies.).
+- **Panel z zakładkami**: Tankowania (dodawanie + edycja + historia), Koszty,
+  Odległość, Tankowanie – każda z porównaniem rok do roku (wykresy słupkowe) oraz
+  wykresem wydatków/kilometrów/litrów dla ostatnich 14 miesięcy (porównanie z
+  analogicznym miesiącem poprzedniego roku).
+
 ## [1.2.0] – 2026-06-07
 
 ### Dodane
@@ -86,6 +97,7 @@ wersjonowanie [SemVer](https://semver.org/lang/pl/).
 - Przykładowy pakiet (helpery + skrypty) i dashboard.
 - Metadane HACS, licencja MIT, CI (hassfest + HACS), workflow Release.
 
+[1.3.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.3.0
 [1.2.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.2.0
 [1.1.3]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.3
 [1.1.2]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.2
