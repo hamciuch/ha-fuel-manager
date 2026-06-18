@@ -44,6 +44,40 @@ input_select:
     icon: mdi:pencil
     options:
       - "— odśwież listę —"
+  fuel_edit_type:
+    name: Edycja – rodzaj paliwa
+    icon: mdi:gas-station
+    options:
+      - "Benzyna 95 (Pb95)"
+      - "Benzyna 98 (Pb98)"
+      - "Benzyna 100 (Pb100/Verva/V-Power)"
+      - "Diesel (ON)"
+      - "Diesel Premium"
+      - "LPG"
+      - "CNG"
+      - "Prąd (EV)"
+      - "Inny"
+    initial: "Benzyna 95 (Pb95)"
+
+  expense_category:
+    name: Kategoria kosztu
+    icon: mdi:shape
+    options:
+      - "Przegląd"
+      - "Ubezpieczenie"
+      - "Serwis"
+      - "Naprawa"
+      - "Opony"
+      - "Myjnia"
+      - "Autostrada/Parking"
+      - "Akcesoria"
+      - "Inne"
+    initial: "Serwis"
+  expense_edit_target:
+    name: Koszt do edycji
+    icon: mdi:pencil
+    options:
+      - "— odśwież listę —"
 
 input_number:
   fuel_odometer:
@@ -108,6 +142,21 @@ input_number:
     unit_of_measurement: zł
     mode: box
 
+  expense_amount:
+    name: Koszt – kwota
+    min: 0
+    max: 100000
+    step: 0.01
+    unit_of_measurement: zł
+    mode: box
+  expense_odometer:
+    name: Koszt – przebieg (opcjonalnie)
+    min: 0
+    max: 2000000
+    step: 1
+    unit_of_measurement: km
+    mode: box
+
 input_boolean:
   fuel_full_tank:
     name: Pełny bak
@@ -129,6 +178,11 @@ input_datetime:
     has_date: true
     has_time: true
     icon: mdi:calendar-clock
+  expense_date:
+    name: Data kosztu
+    has_date: true
+    has_time: false
+    icon: mdi:calendar
 
 input_text:
   fuel_notes:
@@ -147,6 +201,14 @@ input_text:
   fuel_edit_station:
     name: Edycja – stacja
     max: 120
+
+  expense_description:
+    name: Koszt – opis
+    max: 250
+  expense_edit_id:
+    name: Koszt – ID (ukryte)
+    max: 80
+    initial: ""
 
 script:
   # --- 1) Wyszukaj pobliskie stacje dla wybranego auta ----------------------
@@ -350,6 +412,15 @@ script:
                   {% set f = rows | selectattr('id','eq',id) | list | first %}
                   input_boolean.turn_{{ 'on' if (f and f.full) else 'off' }}
                 target: { entity_id: input_boolean.fuel_edit_full }
+              - service: input_select.select_option
+                target: { entity_id: input_select.fuel_edit_type }
+                data:
+                  option: >
+                    {% set id = states('input_text.fuel_edit_id') %}
+                    {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
+                    {% set f = rows | selectattr('id','eq',id) | list | first %}
+                    {% set m = {110:'Benzyna 95 (Pb95)',111:'Benzyna 98 (Pb98)',112:'Benzyna 100 (Pb100/Verva/V-Power)',120:'Diesel (ON)',121:'Diesel Premium',130:'LPG',140:'CNG',160:'Prąd (EV)',0:'Inny'} %}
+                    {{ m.get(f.fuel_type_code | int(110), 'Benzyna 95 (Pb95)') if f else 'Benzyna 95 (Pb95)' }}
         default:
           - service: input_text.set_value
             target: { entity_id: input_text.fuel_edit_id }
@@ -391,6 +462,9 @@ script:
           total_cost: "{{ states('input_number.fuel_edit_total') | float }}"
           full: "{{ is_state('input_boolean.fuel_edit_full','on') }}"
           station_name: "{{ states('input_text.fuel_edit_station') }}"
+          fuel_type: >
+            {% set m = {'Benzyna 95 (Pb95)':110,'Benzyna 98 (Pb98)':111,'Benzyna 100 (Pb100/Verva/V-Power)':112,'Diesel (ON)':120,'Diesel Premium':121,'LPG':130,'CNG':140,'Prąd (EV)':160,'Inny':0} %}
+            {{ m[states('input_select.fuel_edit_type')] | default(110) }}
       - delay: "00:00:01"
       - service: script.fuel_edit_refresh
 
@@ -409,6 +483,135 @@ script:
         data: { value: "" }
       - delay: "00:00:01"
       - service: script.fuel_edit_refresh
+
+  # ===== KOSZTY DODATKOWE =====================================================
+  expense_add:
+    alias: "Koszt: dodaj"
+    icon: mdi:plus-circle
+    sequence:
+      - condition: "{{ states('input_number.expense_amount')|float(0) > 0 }}"
+      - service: fuel_manager.add_expense
+        data:
+          vehicle: "{{ states('input_select.fuel_vehicle') }}"
+          category: "{{ states('input_select.expense_category') }}"
+          amount: "{{ states('input_number.expense_amount')|float }}"
+          timestamp: >
+            {% set d = states('input_datetime.expense_date') %}
+            {{ (d ~ 'T12:00:00') if d not in ['unknown','unavailable',''] else now().isoformat() }}
+          odometer: "{{ states('input_number.expense_odometer')|float(0) }}"
+          description: "{{ states('input_text.expense_description') }}"
+      - service: input_number.set_value
+        target: { entity_id: input_number.expense_amount }
+        data: { value: 0 }
+      - service: input_text.set_value
+        target: { entity_id: input_text.expense_description }
+        data: { value: "" }
+      - delay: "00:00:01"
+      - service: script.expense_edit_refresh
+
+  expense_edit_refresh:
+    alias: "Koszt: odśwież listę"
+    icon: mdi:refresh
+    sequence:
+      - service: input_select.set_options
+        target: { entity_id: input_select.expense_edit_target }
+        data:
+          options: >
+            {% set s = states('input_select.fuel_vehicle')|slugify %}
+            {% set items = state_attr('sensor.' ~ s ~ '_koszty_dodatkowe','items') or [] %}
+            {% set ns = namespace(o=[]) %}
+            {% for e in items[:80] %}
+            {% set ns.o = ns.o + [ e.date ~ ' · ' ~ e.category ~ ' · ' ~ (e.amount|round(2)) ~ ' zł' ~ (' · ' ~ e.description if e.description else '') ] %}
+            {% endfor %}
+            {{ ns.o if ns.o else ['— brak kosztów —'] }}
+
+  expense_edit_load:
+    alias: "Koszt: wczytaj"
+    icon: mdi:download
+    sequence:
+      - service: input_text.set_value
+        target: { entity_id: input_text.expense_edit_id }
+        data:
+          value: >
+            {% set sel = states('input_select.expense_edit_target') %}
+            {% set s = states('input_select.fuel_vehicle')|slugify %}
+            {% set items = state_attr('sensor.' ~ s ~ '_koszty_dodatkowe','items') or [] %}
+            {% set ns = namespace(id='') %}
+            {% for e in items %}
+            {% set label = e.date ~ ' · ' ~ e.category ~ ' · ' ~ (e.amount|round(2)) ~ ' zł' ~ (' · ' ~ e.description if e.description else '') %}
+            {% if label == sel %}{% set ns.id = e.id %}{% endif %}
+            {% endfor %}
+            {{ ns.id }}
+      - choose:
+          - conditions: "{{ states('input_text.expense_edit_id') | length > 3 }}"
+            sequence:
+              - service: input_select.select_option
+                target: { entity_id: input_select.expense_category }
+                data:
+                  option: >
+                    {% set id = states('input_text.expense_edit_id') %}
+                    {% set s = states('input_select.fuel_vehicle')|slugify %}
+                    {% set e = (state_attr('sensor.' ~ s ~ '_koszty_dodatkowe','items') or []) | selectattr('id','eq',id) | list | first %}
+                    {{ e.category if e else 'Inne' }}
+              - service: input_number.set_value
+                target: { entity_id: input_number.expense_amount }
+                data:
+                  value: >
+                    {% set id = states('input_text.expense_edit_id') %}
+                    {% set s = states('input_select.fuel_vehicle')|slugify %}
+                    {% set e = (state_attr('sensor.' ~ s ~ '_koszty_dodatkowe','items') or []) | selectattr('id','eq',id) | list | first %}
+                    {{ e.amount if e else 0 }}
+              - service: input_number.set_value
+                target: { entity_id: input_number.expense_odometer }
+                data:
+                  value: >
+                    {% set id = states('input_text.expense_edit_id') %}
+                    {% set s = states('input_select.fuel_vehicle')|slugify %}
+                    {% set e = (state_attr('sensor.' ~ s ~ '_koszty_dodatkowe','items') or []) | selectattr('id','eq',id) | list | first %}
+                    {{ e.odometer if (e and e.odometer) else 0 }}
+              - service: input_text.set_value
+                target: { entity_id: input_text.expense_description }
+                data:
+                  value: >
+                    {% set id = states('input_text.expense_edit_id') %}
+                    {% set s = states('input_select.fuel_vehicle')|slugify %}
+                    {% set e = (state_attr('sensor.' ~ s ~ '_koszty_dodatkowe','items') or []) | selectattr('id','eq',id) | list | first %}
+                    {{ e.description if e else '' }}
+        default:
+          - service: input_text.set_value
+            target: { entity_id: input_text.expense_edit_id }
+            data: { value: "" }
+
+  expense_edit_save:
+    alias: "Koszt: zapisz"
+    icon: mdi:content-save-edit
+    sequence:
+      - condition: "{{ states('input_text.expense_edit_id') not in ['', 'unknown', 'unavailable'] and (states('input_text.expense_edit_id') | length) > 3 }}"
+      - service: fuel_manager.edit_expense
+        data:
+          vehicle: "{{ states('input_select.fuel_vehicle') }}"
+          id: "{{ states('input_text.expense_edit_id') }}"
+          category: "{{ states('input_select.expense_category') }}"
+          amount: "{{ states('input_number.expense_amount')|float }}"
+          odometer: "{{ states('input_number.expense_odometer')|float(0) }}"
+          description: "{{ states('input_text.expense_description') }}"
+      - delay: "00:00:01"
+      - service: script.expense_edit_refresh
+
+  expense_edit_delete:
+    alias: "Koszt: usuń"
+    icon: mdi:delete
+    sequence:
+      - condition: "{{ states('input_text.expense_edit_id') not in ['', 'unknown', 'unavailable'] and (states('input_text.expense_edit_id') | length) > 3 }}"
+      - service: fuel_manager.delete_expense
+        data:
+          vehicle: "{{ states('input_select.fuel_vehicle') }}"
+          id: "{{ states('input_text.expense_edit_id') }}"
+      - service: input_text.set_value
+        target: { entity_id: input_text.expense_edit_id }
+        data: { value: "" }
+      - delay: "00:00:01"
+      - service: script.expense_edit_refresh
 
 automation:
   # --- AUTOWYLICZANIE: litry × cena/litr = kwota (i odwrotnie) ---------------

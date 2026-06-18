@@ -78,3 +78,7 @@ def fuel_type_name(code: int | str | None) -> str:
     except (TypeError, ValueError):
         return FUEL_TYPES[0]
     return FUEL_TYPES.get(code_int, f"Paliwo {code_int}")
+
+SERVICE_ADD_EXPENSE = "add_expense"
+SERVICE_EDIT_EXPENSE = "edit_expense"
+SERVICE_DELETE_EXPENSE = "delete_expense"

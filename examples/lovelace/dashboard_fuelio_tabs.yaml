@@ -4,7 +4,8 @@ views:
   path: tankowania
   icon: mdi:gas-station
   cards:
-  - type: entities
+  - &id001
+    type: entities
     entities:
     - entity: input_select.fuel_vehicle
       name: Pojazd
@@ -109,6 +110,8 @@ views:
         name: Kwota
       - entity: input_text.fuel_edit_station
         name: Stacja
+      - entity: input_select.fuel_edit_type
+        name: Rodzaj paliwa
       - entity: input_boolean.fuel_edit_full
         name: Pełny bak
     - type: horizontal-stack
@@ -138,15 +141,66 @@ views:
     - entity: sensor.mg_ehs_ostatnie_spalanie
       name: Spalanie
   - type: markdown
-    content: '{% set slug = states(''input_select.fuel_vehicle'') | slugify %} {% set rows = state_attr(''sensor.'' ~ slug ~ ''_historia_tankowan'', ''fuelings'') or [] %} {% set ns = namespace(t=''\n## 📒 Historia tankowań ('' ~ rows|count ~ '')\n\n'') %} {% for f in rows %}{% set ns.t = ns.t ~ ''- **'' ~ (f.timestamp[:16]|replace(''T'','' '')) ~ ''** · '' ~ (f.odometer|round(0)) ~ '' km · '' ~ f.fuel ~ '' L · '' ~ f.price_per_liter ~ '' zł/L · '' ~ f.total_cost ~ '' zł · '' ~ (f.consumption if f.consumption else ''–'') ~ '' L/100km'' ~ ('' · '' ~ f.station_name if f.station_name else '''') ~ ''\n'' %}{% endfor %} {{ ns.t }}
+    content: '{% set slug = states(''input_select.fuel_vehicle'') | slugify %} {% set rows = state_attr(''sensor.'' ~ slug ~ ''_historia_tankowan'', ''fuelings'') or [] %} {% set ns = namespace(t=''\n## 📒 Historia tankowań ('' ~ rows|count ~ '')\n\n'') %} {% for f in rows %}{% set ns.t = ns.t ~ ''- **'' ~ (f.timestamp[:16]|replace(''T'','' '')) ~ ''** · '' ~ f.odometer|round(0) ~ '' km · '' ~ f.fuel ~ '' L · '' ~ f.price_per_liter ~ '' zł/L · '' ~ f.total_cost ~ '' zł · '' ~ (f.consumption if f.consumption else ''–'') ~ '' L/100km'' ~ ('' · '' ~ f.station_name if f.station_name else '''') ~ ''\n'' %}{% endfor %} {{ ns.t }}
 
       '
 - title: Koszty
   path: koszty
   icon: mdi:cash-multiple
   cards:
+  - *id001
   - type: markdown
-    content: "{%- set s = states('input_select.fuel_vehicle')|slugify -%}\n{%- set a = 'sensor.' ~ s ~ '_analiza' -%}\n## \U0001F4B0 Koszty paliwa\n**Łącznie:** {{ state_attr(a,'total_spend') }} zł  \n**W tym roku ({{ state_attr(a,'this_year') }}):** {{ state_attr(a,'spend_this_year') }} zł  \n**Poprzedni rok ({{ state_attr(a,'prev_year') }}):** {{ state_attr(a,'spend_prev_year') }} zł\n\n**Cena za litr:** min {{ state_attr(a,'min_price') }} · max {{ state_attr(a,'max_price') }} zł/L  \n**Rachunek:** min {{ state_attr(a,'min_bill') }} · max {{ state_attr(a,'max_bill') }} zł  \n**Koszt na km:** śr. {{ state_attr(a,'avg_cost_per_km') }} · min {{ state_attr(a,'min_cost_per_km') }} · max {{ state_attr(a,'max_cost_per_km') }} zł/km  \n**Koszt dzienny (śr.):** {{ state_attr(a,'avg_daily_cost') }} zł/dzień  \n**Liczba tankowań:** {{ state_attr(a,'fill_count') }} · **dni:** {{ state_attr(a,'days_span') }}\n"
+    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+
+      {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
+
+      ### 💰 Wydatki na paliwo łącznie
+
+      # {{ state_attr(a,"total_spend")|round(2) ~ " zł" }}
+
+      **Ten rok ({{ state_attr(a,''this_year'') }}):** {{ state_attr(a,''spend_this_year'') }} zł &nbsp;•&nbsp; **Poprzedni ({{ state_attr(a,''prev_year'') }}):** {{ state_attr(a,''spend_prev_year'') }} zł
+
+      '
+  - type: markdown
+    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+
+      {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
+
+      #### Ceny i rachunki
+
+      | | |
+
+      |:--|--:|
+
+      | Najniższa cena/L | **{{ state_attr(a,''min_price'') ~ '' zł'' }}** |
+
+      | Najwyższa cena/L | **{{ state_attr(a,''max_price'') ~ '' zł'' }}** |
+
+      | Najniższy rachunek | **{{ state_attr(a,''min_bill'') ~ '' zł'' }}** |
+
+      | Najwyższy rachunek | **{{ state_attr(a,''max_bill'') ~ '' zł'' }}** |
+
+      '
+  - type: markdown
+    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+
+      {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
+
+      #### Koszt na kilometr
+
+      | | |
+
+      |:--|--:|
+
+      | Średni koszt/km | **{{ state_attr(a,''avg_cost_per_km'') ~ '' zł'' }}** |
+
+      | Najniższy koszt/km | **{{ state_attr(a,''min_cost_per_km'') ~ '' zł'' }}** |
+
+      | Najwyższy koszt/km | **{{ state_attr(a,''max_cost_per_km'') ~ '' zł'' }}** |
+
+      | Średni koszt dzienny | **{{ state_attr(a,''avg_daily_cost'') ~ '' zł/dzień'' }}** |
+
+      '
   - type: custom:apexcharts-card
     header:
       show: true
@@ -170,33 +224,64 @@ views:
         bar:
           columnWidth: 60%
   - type: custom:apexcharts-card
+    chart_type: bar
     header:
       show: true
       title: Wydatki / rok
-    graph_span: 1825d
-    span:
-      end: year
     series:
     - entity: sensor.mg_ehs_analiza
       name: Wydatki / rok
-      type: column
       unit: ' zł'
       color: var(--error-color)
-      data_generator: return Object.entries(entity.attributes.spend_by_year || {}).map(([y,v]) => [new Date(parseInt(y),0,1).getTime(), v]);
+      data_generator: return Object.entries(entity.attributes.spend_by_year || {}).map(([y,v]) => [y, v]);
     apex_config:
       xaxis:
-        labels:
-          datetimeFormatter:
-            year: yyyy
+        type: category
+      dataLabels:
+        enabled: true
       plotOptions:
         bar:
-          columnWidth: 45%
+          columnWidth: 55%
+          distributed: true
+      legend:
+        show: false
 - title: Odległość
   path: odleglosc
   icon: mdi:map-marker-distance
   cards:
+  - *id001
   - type: markdown
-    content: "{%- set s = states('input_select.fuel_vehicle')|slugify -%}\n{%- set a = 'sensor.' ~ s ~ '_analiza' -%}\n## \U0001F6E3️ Odległość\n**Łącznie:** {{ state_attr(a,'total_distance') }} km  \n**W tym roku ({{ state_attr(a,'this_year') }}):** {{ state_attr(a,'distance_this_year') }} km  \n**Poprzedni rok ({{ state_attr(a,'prev_year') }}):** {{ state_attr(a,'distance_prev_year') }} km\n\n**Dystans między tankowaniami:** śr. {{ state_attr(a,'avg_segment_distance') }} · min {{ state_attr(a,'min_segment_distance') }} · max {{ state_attr(a,'max_segment_distance') }} km  \n**Średnio dziennie:** {{ state_attr(a,'avg_daily_distance') }} km/dzień\n"
+    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+
+      {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
+
+      ### 🛣️ Przejechany dystans łącznie
+
+      # {{ state_attr(a,"total_distance")|round(0) ~ " km" }}
+
+      **Ten rok ({{ state_attr(a,''this_year'') }}):** {{ state_attr(a,''distance_this_year'') }} km &nbsp;•&nbsp; **Poprzedni ({{ state_attr(a,''prev_year'') }}):** {{ state_attr(a,''distance_prev_year'') }} km
+
+      '
+  - type: markdown
+    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+
+      {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
+
+      #### Między tankowaniami
+
+      | | |
+
+      |:--|--:|
+
+      | Średni dystans | **{{ state_attr(a,''avg_segment_distance'') ~ '' km'' }}** |
+
+      | Najkrótszy | **{{ state_attr(a,''min_segment_distance'') ~ '' km'' }}** |
+
+      | Najdłuższy | **{{ state_attr(a,''max_segment_distance'') ~ '' km'' }}** |
+
+      | Średnio dziennie | **{{ state_attr(a,''avg_daily_distance'') ~ '' km/dzień'' }}** |
+
+      '
   - type: custom:apexcharts-card
     header:
       show: true
@@ -220,33 +305,64 @@ views:
         bar:
           columnWidth: 60%
   - type: custom:apexcharts-card
+    chart_type: bar
     header:
       show: true
       title: Kilometry / rok
-    graph_span: 1825d
-    span:
-      end: year
     series:
     - entity: sensor.mg_ehs_analiza
       name: Kilometry / rok
-      type: column
       unit: ' km'
       color: var(--primary-color)
-      data_generator: return Object.entries(entity.attributes.distance_by_year || {}).map(([y,v]) => [new Date(parseInt(y),0,1).getTime(), v]);
+      data_generator: return Object.entries(entity.attributes.distance_by_year || {}).map(([y,v]) => [y, v]);
     apex_config:
       xaxis:
-        labels:
-          datetimeFormatter:
-            year: yyyy
+        type: category
+      dataLabels:
+        enabled: true
       plotOptions:
         bar:
-          columnWidth: 45%
+          columnWidth: 55%
+          distributed: true
+      legend:
+        show: false
 - title: Tankowanie
   path: tankowanie-litry
   icon: mdi:fuel
   cards:
+  - *id001
   - type: markdown
-    content: "{%- set s = states('input_select.fuel_vehicle')|slugify -%}\n{%- set a = 'sensor.' ~ s ~ '_analiza' -%}\n## ⛽ Tankowanie (paliwo)\n**Łącznie:** {{ state_attr(a,'total_fuel') }} L  \n**W tym roku ({{ state_attr(a,'this_year') }}):** {{ state_attr(a,'fuel_this_year') }} L  \n**Poprzedni rok ({{ state_attr(a,'prev_year') }}):** {{ state_attr(a,'fuel_prev_year') }} L\n\n**Jednorazowe tankowanie:** śr. {{ state_attr(a,'avg_fill') }} · min {{ state_attr(a,'min_fill') }} · max {{ state_attr(a,'max_fill') }} L  \n**Średnio dziennie:** {{ state_attr(a,'avg_daily_fuel') }} L/dzień\n"
+    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+
+      {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
+
+      ### ⛽ Zatankowane paliwo łącznie
+
+      # {{ state_attr(a,"total_fuel")|round(2) ~ " L" }}
+
+      **Ten rok ({{ state_attr(a,''this_year'') }}):** {{ state_attr(a,''fuel_this_year'') }} L &nbsp;•&nbsp; **Poprzedni ({{ state_attr(a,''prev_year'') }}):** {{ state_attr(a,''fuel_prev_year'') }} L
+
+      '
+  - type: markdown
+    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+
+      {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
+
+      #### Jednorazowe tankowanie
+
+      | | |
+
+      |:--|--:|
+
+      | Średnie | **{{ state_attr(a,''avg_fill'') ~ '' L'' }}** |
+
+      | Najmniejsze | **{{ state_attr(a,''min_fill'') ~ '' L'' }}** |
+
+      | Największe | **{{ state_attr(a,''max_fill'') ~ '' L'' }}** |
+
+      | Średnio dziennie | **{{ state_attr(a,''avg_daily_fuel'') ~ '' L/dzień'' }}** |
+
+      '
   - type: custom:apexcharts-card
     header:
       show: true
@@ -270,33 +386,151 @@ views:
         bar:
           columnWidth: 60%
   - type: custom:apexcharts-card
+    chart_type: bar
     header:
       show: true
       title: Litry / rok
-    graph_span: 1825d
-    span:
-      end: year
     series:
     - entity: sensor.mg_ehs_analiza
       name: Litry / rok
-      type: column
       unit: ' L'
       color: var(--accent-color)
-      data_generator: return Object.entries(entity.attributes.fuel_by_year || {}).map(([y,v]) => [new Date(parseInt(y),0,1).getTime(), v]);
+      data_generator: return Object.entries(entity.attributes.fuel_by_year || {}).map(([y,v]) => [y, v]);
     apex_config:
       xaxis:
-        labels:
-          datetimeFormatter:
-            year: yyyy
+        type: category
+      dataLabels:
+        enabled: true
       plotOptions:
         bar:
-          columnWidth: 45%
+          columnWidth: 55%
+          distributed: true
+      legend:
+        show: false
+- title: Koszty dodatkowe
+  path: koszty-dodatkowe
+  icon: mdi:wrench-clock
+  cards:
+  - *id001
+  - type: vertical-stack
+    cards:
+    - type: markdown
+      content: '### 🧰 Dodaj koszt (przegląd, ubezpieczenie, serwis…)'
+    - type: entities
+      entities:
+      - entity: input_select.expense_category
+        name: Kategoria
+      - entity: input_number.expense_amount
+        name: Kwota (zł)
+      - entity: input_datetime.expense_date
+        name: Data
+      - entity: input_number.expense_odometer
+        name: Przebieg (opcjonalnie)
+      - entity: input_text.expense_description
+        name: Opis (co robione)
+    - type: button
+      name: DODAJ KOSZT
+      icon: mdi:plus-circle
+      tap_action:
+        action: call-service
+        service: script.expense_add
+  - type: vertical-stack
+    cards:
+    - type: markdown
+      content: '### ✏️ Edytuj / usuń koszt'
+    - type: entities
+      entities:
+      - entity: input_select.expense_edit_target
+        name: Wybierz koszt
+    - type: horizontal-stack
+      cards:
+      - type: button
+        name: Odśwież listę
+        icon: mdi:refresh
+        tap_action:
+          action: call-service
+          service: script.expense_edit_refresh
+      - type: button
+        name: Wczytaj wybrane
+        icon: mdi:download
+        tap_action:
+          action: call-service
+          service: script.expense_edit_load
+    - type: markdown
+      content: _Po wczytaniu zmień pola w sekcji „Dodaj koszt” powyżej i zapisz._
+    - type: horizontal-stack
+      cards:
+      - type: button
+        name: ZAPISZ ZMIANY
+        icon: mdi:content-save-edit
+        tap_action:
+          action: call-service
+          service: script.expense_edit_save
+      - type: button
+        name: Usuń
+        icon: mdi:delete
+        tap_action:
+          action: call-service
+          service: script.expense_edit_delete
+  - type: markdown
+    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+
+      {%- set e = ''sensor.'' ~ s ~ ''_koszty_dodatkowe'' -%}
+
+      ### 🛠️ Koszty dodatkowe łącznie
+
+      # {{ state_attr(e,''total'') }} zł
+
+      **Ten rok ({{ state_attr(e,''this_year'') }}):** {{ state_attr(e,''this_year_total'') }} zł &nbsp;•&nbsp; **Poprzedni ({{ state_attr(e,''prev_year'') }}):** {{ state_attr(e,''prev_year_total'') }} zł
+
+
+      #### Wg kategorii
+
+      | Kategoria | Kwota |
+
+      |:--|--:|
+
+      {% for k,v in (state_attr(e,''by_category'') or {}).items() %}| {{ k }} | **{{ v }} zł** |
+
+      {% endfor %}'
+  - type: custom:apexcharts-card
+    chart_type: bar
+    header:
+      show: true
+      title: Koszty dodatkowe / rok
+    series:
+    - entity: sensor.mg_ehs_koszty_dodatkowe
+      name: Koszty/rok
+      unit: ' zł'
+      data_generator: return Object.entries(entity.attributes.by_year || {}).map(([y,v]) => [y, v]);
+    apex_config:
+      xaxis:
+        type: category
+      dataLabels:
+        enabled: true
+      plotOptions:
+        bar:
+          columnWidth: 55%
+          distributed: true
+      legend:
+        show: false
+  - type: markdown
+    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+
+      {%- set e = ''sensor.'' ~ s ~ ''_koszty_dodatkowe'' -%}
+
+      ### 🧾 Historia kosztów
+
+      {% for it in (state_attr(e,''items'') or [])[:60] %}**{{ it.date }}** · {{ it.category }} · **{{ it.amount }} zł**{% if it.description %} — {{ it.description }}{% endif %}
+
+
+      {% else %}_Brak kosztów._{% endfor %}'
 - title: Przegląd
   path: przeglad
   icon: mdi:view-dashboard
   cards:
   - type: markdown
-    content: '{% set slug = states(''input_select.fuel_vehicle'') | slugify %} {% set p = ''sensor.'' ~ slug ~ ''_'' %}
+    content: '{% set slug = states(''input_select.fuel_vehicle'') | slugify %} {% set p = ''sensor.'' ~ slug ~ ''_'' %} ## ⛽ {{ states(''input_select.fuel_vehicle'') }}
 
       🚗 **{{ states(p ~ ''ostatni_przebieg'') }}** km  ·  ⛽ śr. **{{ states(p ~ ''srednie_spalanie'') }}** L/100km  ·  💸 **{{ states(p ~ ''srednia_cena_litr'') }}** zł/L  ·  📈 **{{ states(p ~ ''koszt_na_km'') }}** zł/km
 

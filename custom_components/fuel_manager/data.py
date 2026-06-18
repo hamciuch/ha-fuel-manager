@@ -25,19 +25,54 @@ class FuelData:
             hass, STORAGE_VERSION, STORAGE_KEY_TPL.format(entry_id=entry_id)
         )
         self.fuelings: list[dict[str, Any]] = []
+        self.expenses: list[dict[str, Any]] = []
 
     async def async_load(self) -> None:
         data = await self._store.async_load()
         if data and isinstance(data.get("fuelings"), list):
             self.fuelings = data["fuelings"]
+        if data and isinstance(data.get("expenses"), list):
+            self.expenses = data["expenses"]
         self._sort()
 
     async def async_save(self) -> None:
-        await self._store.async_save({"fuelings": self.fuelings})
+        await self._store.async_save(
+            {"fuelings": self.fuelings, "expenses": self.expenses}
+        )
 
     def _sort(self) -> None:
         # od najnowszego do najstarszego
         self.fuelings.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+        self.expenses.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+
+    # ---- KOSZTY DODATKOWE (przegląd/ubezpieczenie/serwis...) -------------
+
+    async def async_add_expense(self, expense: dict[str, Any]) -> str:
+        if not expense.get("id"):
+            expense["id"] = str(uuid.uuid4())
+        if not expense.get("timestamp"):
+            expense["timestamp"] = datetime.now().isoformat()
+        self.expenses.append(expense)
+        self._sort()
+        await self.async_save()
+        return expense["id"]
+
+    async def async_edit_expense(self, expense_id: str, changes: dict[str, Any]) -> bool:
+        for e in self.expenses:
+            if e["id"] == expense_id:
+                e.update({k: v for k, v in changes.items() if v is not None})
+                self._sort()
+                await self.async_save()
+                return True
+        return False
+
+    async def async_delete_expense(self, expense_id: str) -> bool:
+        before = len(self.expenses)
+        self.expenses = [e for e in self.expenses if e["id"] != expense_id]
+        if len(self.expenses) != before:
+            await self.async_save()
+            return True
+        return False
 
     # ---- CRUD -----------------------------------------------------------
 

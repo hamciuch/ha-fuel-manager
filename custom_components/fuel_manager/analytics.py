@@ -178,3 +178,48 @@ def compute_analytics(fuelings: list[dict[str, Any]]) -> dict[str, Any]:
         # WYKRES
         "monthly": monthly,
     }
+
+
+def compute_expense_analytics(expenses: list[dict[str, Any]]) -> dict[str, Any]:
+    """Statystyki kosztów dodatkowych (przegląd/ubezpieczenie/serwis...)."""
+    now = datetime.now()
+    cur_year, prev_year = now.year, now.year - 1
+    es = [e for e in (expenses or []) if e.get("amount") is not None]
+    if not es:
+        return {
+            "this_year": cur_year, "prev_year": prev_year,
+            "total": 0, "this_year_total": 0, "prev_year_total": 0,
+            "count": 0, "by_category": {}, "by_year": {}, "items": [],
+        }
+    by_cat: dict[str, float] = defaultdict(float)
+    by_year: dict[int, float] = defaultdict(float)
+    total = 0.0
+    for e in es:
+        amt = float(e.get("amount") or 0)
+        total += amt
+        by_cat[e.get("category") or "Inne"] += amt
+        dt = _parse(e.get("timestamp"))
+        if dt:
+            by_year[dt.year] += amt
+    items = []
+    for e in sorted(es, key=lambda x: x.get("timestamp") or "", reverse=True)[:200]:
+        dt = _parse(e.get("timestamp"))
+        items.append({
+            "id": e.get("id"),
+            "timestamp": e.get("timestamp"),
+            "date": dt.strftime("%Y-%m-%d") if dt else "",
+            "category": e.get("category") or "Inne",
+            "amount": _r(e.get("amount") or 0),
+            "odometer": e.get("odometer"),
+            "description": e.get("description") or "",
+        })
+    return {
+        "this_year": cur_year, "prev_year": prev_year,
+        "total": _r(total),
+        "this_year_total": _r(by_year.get(cur_year, 0)),
+        "prev_year_total": _r(by_year.get(prev_year, 0)),
+        "count": len(es),
+        "by_category": {k: _r(v) for k, v in sorted(by_cat.items(), key=lambda x: -x[1])},
+        "by_year": {str(k): _r(v) for k, v in sorted(by_year.items())},
+        "items": items,
+    }

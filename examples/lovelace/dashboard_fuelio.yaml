@@ -136,6 +136,8 @@ cards:
             name: Kwota
           - entity: input_text.fuel_edit_station
             name: Stacja
+          - entity: input_select.fuel_edit_type
+            name: Rodzaj paliwa
           - entity: input_boolean.fuel_edit_full
             name: Pełny bak
       - type: horizontal-stack

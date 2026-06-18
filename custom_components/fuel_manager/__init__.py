@@ -31,7 +31,10 @@ from .const import (
     DEFAULT_OVERPASS_RADIUS,
     DEFAULT_STATION_RADIUS,
     DOMAIN,
+    SERVICE_ADD_EXPENSE,
     SERVICE_ADD_FUELING,
+    SERVICE_DELETE_EXPENSE,
+    SERVICE_EDIT_EXPENSE,
     SERVICE_DELETE_FUELING,
     SERVICE_EDIT_FUELING,
     SERVICE_EXPORT_FUELIO,
@@ -92,6 +95,31 @@ EDIT_SCHEMA = vol.Schema(
 )
 
 DELETE_SCHEMA = vol.Schema({**_VEHICLE, vol.Required("id"): cv.string})
+
+EXPENSE_ADD_SCHEMA = vol.Schema(
+    {
+        **_VEHICLE,
+        vol.Required("category"): cv.string,
+        vol.Required("amount"): vol.Coerce(float),
+        vol.Optional("timestamp"): cv.string,
+        vol.Optional("odometer"): vol.Coerce(float),
+        vol.Optional("description"): cv.string,
+    }
+)
+
+EXPENSE_EDIT_SCHEMA = vol.Schema(
+    {
+        **_VEHICLE,
+        vol.Required("id"): cv.string,
+        vol.Optional("category"): cv.string,
+        vol.Optional("amount"): vol.Coerce(float),
+        vol.Optional("timestamp"): cv.string,
+        vol.Optional("odometer"): vol.Coerce(float),
+        vol.Optional("description"): cv.string,
+    }
+)
+
+EXPENSE_DELETE_SCHEMA = vol.Schema({**_VEHICLE, vol.Required("id"): cv.string})
 
 IMPORT_SCHEMA = vol.Schema(
     {
@@ -380,7 +408,28 @@ def _register_services(hass: HomeAssistant) -> None:
         _notify_update(hass, d["entry"].entry_id)
         await _rebuild_stats(hass, d)
 
-    async def handle_import(call: ServiceCall) -> ServiceResponse:
+    async def handle_add_expense(call: ServiceCall) -> ServiceResponse:
+        d = _resolve_entry(hass, call.data.get("vehicle"))
+        expense = {k: v for k, v in call.data.items() if k != "vehicle"}
+        new_id = await d["data"].async_add_expense(expense)
+        _notify_update(hass, d["entry"].entry_id)
+        return {"id": new_id}
+
+    async def handle_edit_expense(call: ServiceCall) -> None:
+        d = _resolve_entry(hass, call.data.get("vehicle"))
+        changes = {k: v for k, v in call.data.items() if k not in ("vehicle", "id")}
+        ok = await d["data"].async_edit_expense(call.data["id"], changes)
+        if not ok:
+            raise HomeAssistantError(f"Nie znaleziono kosztu id={call.data['id']}")
+        _notify_update(hass, d["entry"].entry_id)
+
+    async def handle_delete_expense(call: ServiceCall) -> None:
+        d = _resolve_entry(hass, call.data.get("vehicle"))
+        ok = await d["data"].async_delete_expense(call.data["id"])
+        if not ok:
+            raise HomeAssistantError(f"Nie znaleziono kosztu id={call.data['id']}")
+        _notify_update(hass, d["entry"].entry_id)
+
         d = _resolve_entry(hass, call.data.get("vehicle"))
         content = call.data.get("content")
         if content is None:
@@ -509,4 +558,14 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN, SERVICE_REBUILD_STATS, handle_rebuild, REBUILD_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_ADD_EXPENSE, handle_add_expense, EXPENSE_ADD_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_EDIT_EXPENSE, handle_edit_expense, EXPENSE_EDIT_SCHEMA
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_DELETE_EXPENSE, handle_delete_expense, EXPENSE_DELETE_SCHEMA
     )

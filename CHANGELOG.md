@@ -4,6 +4,24 @@ Wszystkie istotne zmiany w projekcie. Format wzorowany na
 [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/),
 wersjonowanie [SemVer](https://semver.org/lang/pl/).
 
+## [1.4.0] – 2026-06-08
+
+### Dodane
+- **Koszty dodatkowe** – nowy rejestr wydatków poza paliwem (przegląd, ubezpieczenie,
+  serwis, naprawa, opony itd.) z kwotą, datą, przebiegiem i **opisem**. Serwisy
+  `add_expense`, `edit_expense`, `delete_expense`; sensor `..._koszty_dodatkowe`
+  (sumy łącznie/rok/wg kategorii). Osobna zakładka w panelu z formularzem, edycją
+  i historią.
+- **Rodzaj paliwa w edytorze** tankowań (wczytywanie i zapis).
+
+### Zmienione
+- Wykresy „… / rok” to teraz **słupki z latami** (kolejne lata dochodzą same),
+  zamiast osi miesięcznej.
+- Czytelniejsze karty Koszty/Odległość/Tankowanie: duża wartość główna,
+  pogrubienia i rozdzielone sekcje (ceny/rachunki, koszt na km itd.).
+- Stałe `entity_id` sensorów analizy i kosztów (np. `sensor.<auto>_analiza`),
+  niezależne od obszaru urządzenia.
+
 ## [1.3.0] – 2026-06-07
 
 ### Dodane
@@ -97,6 +115,7 @@ wersjonowanie [SemVer](https://semver.org/lang/pl/).
 - Przykładowy pakiet (helpery + skrypty) i dashboard.
 - Metadane HACS, licencja MIT, CI (hassfest + HACS), workflow Release.
 
+[1.4.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.4.0
 [1.3.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.3.0
 [1.2.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.2.0
 [1.1.3]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.3

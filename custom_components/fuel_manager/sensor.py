@@ -11,7 +11,9 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .analytics import compute_analytics
+from homeassistant.util import slugify
+
+from .analytics import compute_analytics, compute_expense_analytics
 from .const import DOMAIN, SIGNAL_UPDATE, fuel_type_name
 from .data import FuelData
 
@@ -63,6 +65,7 @@ async def async_setup_entry(
         NearestStationSensor(entry, data, store),
         HistorySensor(entry, data),
         AnalyticsSensor(entry, data),
+        ExpensesSensor(entry, data),
     ]
     async_add_entities(sensors)
 
@@ -219,6 +222,7 @@ class HistorySensor(_Base):
                     "price_per_liter": f.get("price_per_liter"),
                     "total_cost": f.get("total_cost"),
                     "fuel_type": fuel_type_name(f.get("fuel_type")),
+                    "fuel_type_code": f.get("fuel_type"),
                     "station_name": f.get("station_name"),
                     "consumption": f.get("consumption"),
                     "full": f.get("full"),
@@ -237,6 +241,7 @@ class AnalyticsSensor(_Base):
         super().__init__(entry, data)
         self._attr_unique_id = f"{entry.entry_id}_analytics"
         self._attr_name = "Analiza"
+        self.entity_id = f"sensor.{slugify(entry.title)}_analiza"
 
     @property
     def native_value(self) -> Any:
@@ -245,3 +250,24 @@ class AnalyticsSensor(_Base):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return compute_analytics(self._data.fuelings)
+
+
+class ExpensesSensor(_Base):
+    """Koszty dodatkowe (przegląd/ubezpieczenie/serwis...) – dane w atrybutach."""
+
+    _attr_icon = "mdi:wrench-clock"
+    _attr_native_unit_of_measurement = "zł"
+
+    def __init__(self, entry: ConfigEntry, data: FuelData) -> None:
+        super().__init__(entry, data)
+        self._attr_unique_id = f"{entry.entry_id}_expenses"
+        self._attr_name = "Koszty dodatkowe"
+        self.entity_id = f"sensor.{slugify(entry.title)}_koszty_dodatkowe"
+
+    @property
+    def native_value(self) -> Any:
+        return compute_expense_analytics(self._data.expenses).get("total", 0)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return compute_expense_analytics(self._data.expenses)
