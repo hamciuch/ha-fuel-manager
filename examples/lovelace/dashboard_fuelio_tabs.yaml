@@ -148,57 +148,70 @@ views:
   path: koszty
   icon: mdi:cash-multiple
   cards:
-  - *id001
   - type: markdown
     content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
 
       {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
 
-      ### 💰 Wydatki na paliwo łącznie
+      {%- macro zl(x) -%}{{ ''{:,.2f}''.format(x|float(0)).replace('','', '' '').replace(''.'', '','') }}{%- endmacro -%}
 
-      # {{ state_attr(a,"total_spend")|round(2) ~ " zł" }}
+      {%- macro n0(x) -%}{{ ''{:,.0f}''.format(x|float(0)).replace('','', '' '') }}{%- endmacro -%}
 
-      **Ten rok ({{ state_attr(a,''this_year'') }}):** {{ state_attr(a,''spend_this_year'') }} zł &nbsp;•&nbsp; **Poprzedni ({{ state_attr(a,''prev_year'') }}):** {{ state_attr(a,''spend_prev_year'') }} zł
+      {%- macro n3(x) -%}{{ ''{:,.3f}''.format(x|float(0)).replace('','', '' '').replace(''.'', '','') }}{%- endmacro -%}
 
-      '
-  - type: markdown
-    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+      ## 💰 Koszty paliwa
 
-      {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
 
-      #### Ceny i rachunki
+      # {{ zl(state_attr(a,''total_spend'')) }} zł
+
+      łącznie wydane na paliwo
+
+
+      | Okres | Kwota |
+
+      |:--|--:|
+
+      | **Ten rok ({{ state_attr(a,''this_year'') }})** | **{{ zl(state_attr(a,''spend_this_year'')) }} zł** |
+
+      | Poprzedni ({{ state_attr(a,''prev_year'') }}) | {{ zl(state_attr(a,''spend_prev_year'')) }} zł |
+
+
+      ---
+
+
+      ### ⛽ Ceny i rachunki
+
 
       | | |
 
       |:--|--:|
 
-      | Najniższa cena/L | **{{ state_attr(a,''min_price'') ~ '' zł'' }}** |
+      | Najniższa cena/L | **{{ n3(state_attr(a,''min_price'')) }} zł** |
 
-      | Najwyższa cena/L | **{{ state_attr(a,''max_price'') ~ '' zł'' }}** |
+      | Najwyższa cena/L | **{{ n3(state_attr(a,''max_price'')) }} zł** |
 
-      | Najniższy rachunek | **{{ state_attr(a,''min_bill'') ~ '' zł'' }}** |
+      | Najniższy rachunek | **{{ zl(state_attr(a,''min_bill'')) }} zł** |
 
-      | Najwyższy rachunek | **{{ state_attr(a,''max_bill'') ~ '' zł'' }}** |
+      | Najwyższy rachunek | **{{ zl(state_attr(a,''max_bill'')) }} zł** |
 
-      '
-  - type: markdown
-    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
 
-      {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
+      ---
 
-      #### Koszt na kilometr
+
+      ### 🛣️ Koszt na kilometr
+
 
       | | |
 
       |:--|--:|
 
-      | Średni koszt/km | **{{ state_attr(a,''avg_cost_per_km'') ~ '' zł'' }}** |
+      | Średni | **{{ n3(state_attr(a,''avg_cost_per_km'')) }} zł/km** |
 
-      | Najniższy koszt/km | **{{ state_attr(a,''min_cost_per_km'') ~ '' zł'' }}** |
+      | Najniższy | {{ n3(state_attr(a,''min_cost_per_km'')) }} zł/km |
 
-      | Najwyższy koszt/km | **{{ state_attr(a,''max_cost_per_km'') ~ '' zł'' }}** |
+      | Najwyższy | {{ n3(state_attr(a,''max_cost_per_km'')) }} zł/km |
 
-      | Średni koszt dzienny | **{{ state_attr(a,''avg_daily_cost'') ~ '' zł/dzień'' }}** |
+      | Średni koszt dzienny | **{{ zl(state_attr(a,''avg_daily_cost'')) }} zł/dzień** |
 
       '
   - type: custom:apexcharts-card
@@ -225,61 +238,80 @@ views:
           columnWidth: 60%
   - type: custom:apexcharts-card
     chart_type: bar
+    graph_span: 1500d
+    span:
+      end: year
     header:
       show: true
       title: Wydatki / rok
     series:
     - entity: sensor.mg_ehs_analiza
       name: Wydatki / rok
+      type: column
       unit: ' zł'
       color: var(--error-color)
-      data_generator: return Object.entries(entity.attributes.spend_by_year || {}).map(([y,v]) => [y, v]);
+      data_generator: return Object.entries(entity.attributes.spend_by_year || {}).map(([y,v]) => [new Date(parseInt(y),0,1).getTime(), v]);
     apex_config:
       xaxis:
-        type: category
-      dataLabels:
-        enabled: true
+        labels:
+          format: yyyy
+      tooltip:
+        x:
+          format: yyyy
       plotOptions:
         bar:
-          columnWidth: 55%
-          distributed: true
-      legend:
-        show: false
+          columnWidth: 40%
+      dataLabels:
+        enabled: true
 - title: Odległość
   path: odleglosc
   icon: mdi:map-marker-distance
   cards:
-  - *id001
   - type: markdown
     content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
 
       {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
 
-      ### 🛣️ Przejechany dystans łącznie
+      {%- macro zl(x) -%}{{ ''{:,.2f}''.format(x|float(0)).replace('','', '' '').replace(''.'', '','') }}{%- endmacro -%}
 
-      # {{ state_attr(a,"total_distance")|round(0) ~ " km" }}
+      {%- macro n0(x) -%}{{ ''{:,.0f}''.format(x|float(0)).replace('','', '' '') }}{%- endmacro -%}
 
-      **Ten rok ({{ state_attr(a,''this_year'') }}):** {{ state_attr(a,''distance_this_year'') }} km &nbsp;•&nbsp; **Poprzedni ({{ state_attr(a,''prev_year'') }}):** {{ state_attr(a,''distance_prev_year'') }} km
+      {%- macro n3(x) -%}{{ ''{:,.3f}''.format(x|float(0)).replace('','', '' '').replace(''.'', '','') }}{%- endmacro -%}
 
-      '
-  - type: markdown
-    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+      ## 🛣️ Odległość
 
-      {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
 
-      #### Między tankowaniami
+      # {{ n0(state_attr(a,''total_distance'')) }} km
+
+      przejechane łącznie
+
+
+      | Okres | Dystans |
+
+      |:--|--:|
+
+      | **Ten rok ({{ state_attr(a,''this_year'') }})** | **{{ n0(state_attr(a,''distance_this_year'')) }} km** |
+
+      | Poprzedni ({{ state_attr(a,''prev_year'') }}) | {{ n0(state_attr(a,''distance_prev_year'')) }} km |
+
+
+      ---
+
+
+      ### 📍 Między tankowaniami
+
 
       | | |
 
       |:--|--:|
 
-      | Średni dystans | **{{ state_attr(a,''avg_segment_distance'') ~ '' km'' }}** |
+      | Średnio | **{{ n0(state_attr(a,''avg_segment_distance'')) }} km** |
 
-      | Najkrótszy | **{{ state_attr(a,''min_segment_distance'') ~ '' km'' }}** |
+      | Najmniej | {{ n0(state_attr(a,''min_segment_distance'')) }} km |
 
-      | Najdłuższy | **{{ state_attr(a,''max_segment_distance'') ~ '' km'' }}** |
+      | Najwięcej | {{ n0(state_attr(a,''max_segment_distance'')) }} km |
 
-      | Średnio dziennie | **{{ state_attr(a,''avg_daily_distance'') ~ '' km/dzień'' }}** |
+      | Średnio dziennie | **{{ n0(state_attr(a,''avg_daily_distance'')) }} km/dzień** |
 
       '
   - type: custom:apexcharts-card
@@ -306,61 +338,80 @@ views:
           columnWidth: 60%
   - type: custom:apexcharts-card
     chart_type: bar
+    graph_span: 1500d
+    span:
+      end: year
     header:
       show: true
       title: Kilometry / rok
     series:
     - entity: sensor.mg_ehs_analiza
       name: Kilometry / rok
+      type: column
       unit: ' km'
       color: var(--primary-color)
-      data_generator: return Object.entries(entity.attributes.distance_by_year || {}).map(([y,v]) => [y, v]);
+      data_generator: return Object.entries(entity.attributes.distance_by_year || {}).map(([y,v]) => [new Date(parseInt(y),0,1).getTime(), v]);
     apex_config:
       xaxis:
-        type: category
-      dataLabels:
-        enabled: true
+        labels:
+          format: yyyy
+      tooltip:
+        x:
+          format: yyyy
       plotOptions:
         bar:
-          columnWidth: 55%
-          distributed: true
-      legend:
-        show: false
+          columnWidth: 40%
+      dataLabels:
+        enabled: true
 - title: Tankowanie
   path: tankowanie-litry
   icon: mdi:fuel
   cards:
-  - *id001
   - type: markdown
     content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
 
       {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
 
-      ### ⛽ Zatankowane paliwo łącznie
+      {%- macro zl(x) -%}{{ ''{:,.2f}''.format(x|float(0)).replace('','', '' '').replace(''.'', '','') }}{%- endmacro -%}
 
-      # {{ state_attr(a,"total_fuel")|round(2) ~ " L" }}
+      {%- macro n0(x) -%}{{ ''{:,.0f}''.format(x|float(0)).replace('','', '' '') }}{%- endmacro -%}
 
-      **Ten rok ({{ state_attr(a,''this_year'') }}):** {{ state_attr(a,''fuel_this_year'') }} L &nbsp;•&nbsp; **Poprzedni ({{ state_attr(a,''prev_year'') }}):** {{ state_attr(a,''fuel_prev_year'') }} L
+      {%- macro n3(x) -%}{{ ''{:,.3f}''.format(x|float(0)).replace('','', '' '').replace(''.'', '','') }}{%- endmacro -%}
 
-      '
-  - type: markdown
-    content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
+      ## ⛽ Tankowanie (paliwo)
 
-      {%- set a = ''sensor.'' ~ s ~ ''_analiza'' -%}
 
-      #### Jednorazowe tankowanie
+      # {{ zl(state_attr(a,''total_fuel'')) }} L
+
+      zatankowane łącznie
+
+
+      | Okres | Litry |
+
+      |:--|--:|
+
+      | **Ten rok ({{ state_attr(a,''this_year'') }})** | **{{ zl(state_attr(a,''fuel_this_year'')) }} L** |
+
+      | Poprzedni ({{ state_attr(a,''prev_year'') }}) | {{ zl(state_attr(a,''fuel_prev_year'')) }} L |
+
+
+      ---
+
+
+      ### 🛢️ Jednorazowe tankowanie
+
 
       | | |
 
       |:--|--:|
 
-      | Średnie | **{{ state_attr(a,''avg_fill'') ~ '' L'' }}** |
+      | Średnio | **{{ zl(state_attr(a,''avg_fill'')) }} L** |
 
-      | Najmniejsze | **{{ state_attr(a,''min_fill'') ~ '' L'' }}** |
+      | Najmniej | {{ zl(state_attr(a,''min_fill'')) }} L |
 
-      | Największe | **{{ state_attr(a,''max_fill'') ~ '' L'' }}** |
+      | Najwięcej | {{ zl(state_attr(a,''max_fill'')) }} L |
 
-      | Średnio dziennie | **{{ state_attr(a,''avg_daily_fuel'') ~ '' L/dzień'' }}** |
+      | Średnio dziennie | **{{ zl(state_attr(a,''avg_daily_fuel'')) }} L/dzień** |
 
       '
   - type: custom:apexcharts-card
@@ -387,26 +438,31 @@ views:
           columnWidth: 60%
   - type: custom:apexcharts-card
     chart_type: bar
+    graph_span: 1500d
+    span:
+      end: year
     header:
       show: true
       title: Litry / rok
     series:
     - entity: sensor.mg_ehs_analiza
       name: Litry / rok
+      type: column
       unit: ' L'
       color: var(--accent-color)
-      data_generator: return Object.entries(entity.attributes.fuel_by_year || {}).map(([y,v]) => [y, v]);
+      data_generator: return Object.entries(entity.attributes.fuel_by_year || {}).map(([y,v]) => [new Date(parseInt(y),0,1).getTime(), v]);
     apex_config:
       xaxis:
-        type: category
-      dataLabels:
-        enabled: true
+        labels:
+          format: yyyy
+      tooltip:
+        x:
+          format: yyyy
       plotOptions:
         bar:
-          columnWidth: 55%
-          distributed: true
-      legend:
-        show: false
+          columnWidth: 40%
+      dataLabels:
+        enabled: true
 - title: Koszty dodatkowe
   path: koszty-dodatkowe
   icon: mdi:wrench-clock
@@ -495,25 +551,31 @@ views:
       {% endfor %}'
   - type: custom:apexcharts-card
     chart_type: bar
+    graph_span: 1500d
+    span:
+      end: year
     header:
       show: true
       title: Koszty dodatkowe / rok
     series:
     - entity: sensor.mg_ehs_koszty_dodatkowe
-      name: Koszty/rok
+      name: Koszty dodatkowe / rok
+      type: column
       unit: ' zł'
-      data_generator: return Object.entries(entity.attributes.by_year || {}).map(([y,v]) => [y, v]);
+      color: null
+      data_generator: return Object.entries(entity.attributes.by_year || {}).map(([y,v]) => [new Date(parseInt(y),0,1).getTime(), v]);
     apex_config:
       xaxis:
-        type: category
-      dataLabels:
-        enabled: true
+        labels:
+          format: yyyy
+      tooltip:
+        x:
+          format: yyyy
       plotOptions:
         bar:
-          columnWidth: 55%
-          distributed: true
-      legend:
-        show: false
+          columnWidth: 40%
+      dataLabels:
+        enabled: true
   - type: markdown
     content: '{%- set s = states(''input_select.fuel_vehicle'')|slugify -%}
 

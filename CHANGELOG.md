@@ -22,6 +22,16 @@ wersjonowanie [SemVer](https://semver.org/lang/pl/).
 - Stałe `entity_id` sensorów analizy i kosztów (np. `sensor.<auto>_analiza`),
   niezależne od obszaru urządzenia.
 
+## [1.3.1] – 2026-06-18
+
+### Naprawione
+- Wykresy „na rok” (koszty/odległość/paliwo/koszty dodatkowe) pokazują teraz lata
+  (słupek na rok), a nie miesiące; kolejne lata dochodzą automatycznie.
+- Czytelniejsze karty statystyk (Koszty/Odległość/Tankowanie): sekcje, pogrubienia,
+  duża suma na górze i polskie formatowanie liczb (spacja tysięcy, przecinek).
+- Stały `entity_id` sensora analizy (`<auto>_analiza`) – obszar urządzenia nie
+  zmieni już nazwy encji.
+
 ## [1.3.0] – 2026-06-07
 
 ### Dodane
@@ -116,6 +126,7 @@ wersjonowanie [SemVer](https://semver.org/lang/pl/).
 - Metadane HACS, licencja MIT, CI (hassfest + HACS), workflow Release.
 
 [1.4.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.4.0
+[1.3.1]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.3.1
 [1.3.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.3.0
 [1.2.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.2.0
 [1.1.3]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.3

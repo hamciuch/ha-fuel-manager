@@ -242,6 +242,7 @@ class AnalyticsSensor(_Base):
         self._attr_unique_id = f"{entry.entry_id}_analytics"
         self._attr_name = "Analiza"
         self.entity_id = f"sensor.{slugify(entry.title)}_analiza"
+        self.entity_id = f"sensor.{slugify(entry.title)}_analiza"
 
     @property
     def native_value(self) -> Any:
