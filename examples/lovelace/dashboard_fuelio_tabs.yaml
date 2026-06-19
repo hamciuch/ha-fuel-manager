@@ -237,7 +237,6 @@ views:
         bar:
           columnWidth: 60%
   - type: custom:apexcharts-card
-    chart_type: bar
     graph_span: 1500d
     span:
       end: year
@@ -337,7 +336,6 @@ views:
         bar:
           columnWidth: 60%
   - type: custom:apexcharts-card
-    chart_type: bar
     graph_span: 1500d
     span:
       end: year
@@ -437,7 +435,6 @@ views:
         bar:
           columnWidth: 60%
   - type: custom:apexcharts-card
-    chart_type: bar
     graph_span: 1500d
     span:
       end: year
@@ -550,7 +547,6 @@ views:
 
       {% endfor %}'
   - type: custom:apexcharts-card
-    chart_type: bar
     graph_span: 1500d
     span:
       end: year

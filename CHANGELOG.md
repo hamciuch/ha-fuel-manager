@@ -30,6 +30,10 @@ wersjonowanie [SemVer](https://semver.org/lang/pl/).
   `handle_delete_expense` bez własnej definicji funkcji – przywrócono nagłówek
   `async def handle_import(...)`, dzięki czemu serwis `import_fuelio` rejestruje
   się poprawnie, a `delete_expense` ma znów właściwe ciało.
+- **Panel (apexcharts-card):** karty słupkowe „… / rok" i „… / miesiąc" zgłaszały
+  `Błąd konfiguracji` (`value.chart_type is none of line/scatter/pie/donut/radialBar`).
+  Usunięto nieprawidłowe `chart_type: bar` na poziomie karty – słupki realizuje już
+  `type: column` na serii (poprawny sposób w apexcharts-card).
 
 ## [1.3.1] – 2026-06-18
 
