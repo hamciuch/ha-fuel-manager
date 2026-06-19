@@ -125,14 +125,14 @@ wersjonowanie [SemVer](https://semver.org/lang/pl/).
 - Przykładowy pakiet (helpery + skrypty) i dashboard.
 - Metadane HACS, licencja MIT, CI (hassfest + HACS), workflow Release.
 
-[1.4.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.4.0
-[1.3.1]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.3.1
-[1.3.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.3.0
-[1.2.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.2.0
-[1.1.3]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.3
-[1.1.2]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.2
-[1.1.1]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.1
-[1.1.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.1.0
-[1.0.2]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.0.2
-[1.0.1]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.0.1
-[1.0.0]: https://github.com/yourusername/ha-fuel-manager/releases/tag/v1.0.0
+[1.4.0]: https://github.com/hamciuch/ha-fuel-manager/releases/tag/v1.4.0
+[1.3.1]: https://github.com/hamciuch/ha-fuel-manager/releases/tag/v1.3.1
+[1.3.0]: https://github.com/hamciuch/ha-fuel-manager/releases/tag/v1.3.0
+[1.2.0]: https://github.com/hamciuch/ha-fuel-manager/releases/tag/v1.2.0
+[1.1.3]: https://github.com/hamciuch/ha-fuel-manager/releases/tag/v1.1.3
+[1.1.2]: https://github.com/hamciuch/ha-fuel-manager/releases/tag/v1.1.2
+[1.1.1]: https://github.com/hamciuch/ha-fuel-manager/releases/tag/v1.1.1
+[1.1.0]: https://github.com/hamciuch/ha-fuel-manager/releases/tag/v1.1.0
+[1.0.2]: https://github.com/hamciuch/ha-fuel-manager/releases/tag/v1.0.2
+[1.0.1]: https://github.com/hamciuch/ha-fuel-manager/releases/tag/v1.0.1
+[1.0.0]: https://github.com/hamciuch/ha-fuel-manager/releases/tag/v1.0.0

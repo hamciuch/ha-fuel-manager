@@ -33,7 +33,7 @@ paliwa oraz **import danych z aplikacji Fuelio** (CSV).
 2. Wklej URL repo, kategoria: **Integration**, **Add**.
 3. Wyszukaj „Fuel Manager”, **Download**, zrestartuj Home Assistant.
 
-[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=yourusername&repository=ha-fuel-manager&category=integration)
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=hamciuch&repository=ha-fuel-manager&category=integration)
 
 ### Opcja B — ręcznie
 
