@@ -1,7 +1,7 @@
 {
   "domain": "fuel_manager",
   "name": "Fuel Manager (Tankowania)",
-  "version": "1.3.2",
+  "version": "1.4.1",
   "documentation": "https://github.com/hamciuch/ha-fuel-manager",
   "issue_tracker": "https://github.com/hamciuch/ha-fuel-manager/issues",
   "dependencies": [],

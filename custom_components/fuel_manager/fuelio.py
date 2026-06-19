@@ -65,6 +65,8 @@ def parse_fuelio(content: str) -> dict[str, Any]:
 
     vehicle: dict[str, Any] | None = None
     fuelings: list[dict[str, Any]] = []
+    cost_categories: dict[str, str] = {}
+    expenses: list[dict[str, Any]] = []
 
     for raw in lines:
         if raw.strip() == "":
@@ -127,8 +129,37 @@ def parse_fuelio(content: str) -> dict[str, Any]:
                     "consumption": cons,
                 }
             )
+        elif section == "CostCategories":
+            rec = dict(zip(header, row))
+            ctid = (rec.get("CostTypeID") or "").strip()
+            name = (rec.get("Name") or "").strip()
+            if ctid and name:
+                cost_categories[ctid] = name
+        elif section == "Costs":
+            rec = dict(zip(header, row))
+            # pomiń szablony i przychody – to nie są realne koszty
+            if (rec.get("isTemplate") or "0").strip() == "1":
+                continue
+            if (rec.get("isIncome") or "0").strip() == "1":
+                continue
+            title = (rec.get("CostTitle") or "").strip()
+            note = (rec.get("Notes") or "").strip()
+            description = title if not note else (f"{title} — {note}" if title else note)
+            ctid = (rec.get("CostTypeID") or "").strip()
+            odo = _to_float(rec.get("Odo"))
+            src_guid = (rec.get("guid") or "").strip()
+            expenses.append(
+                {
+                    "id": src_guid or str(uuid.uuid4()),
+                    "category": cost_categories.get(ctid, "Inne"),
+                    "amount": _to_float(rec.get("Cost")) or 0.0,
+                    "timestamp": _parse_dt(rec.get("Date") or ""),
+                    "odometer": odo if (odo and odo > 0) else None,
+                    "description": description,
+                }
+            )
 
-    return {"vehicle": vehicle, "fuelings": fuelings}
+    return {"vehicle": vehicle, "fuelings": fuelings, "expenses": expenses}
 
 
 def export_fuelio(vehicle_name: str, fuelings: list[dict[str, Any]]) -> str:

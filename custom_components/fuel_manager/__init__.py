@@ -451,10 +451,19 @@ def _register_services(hass: HomeAssistant) -> None:
 
         parsed = await hass.async_add_executor_job(parse_fuelio, content)
         added = await d["data"].async_import(parsed["fuelings"])
+        added_exp = await d["data"].async_import_expenses(parsed.get("expenses", []))
         _notify_update(hass, d["entry"].entry_id)
         await _rebuild_stats(hass, d)
-        _LOGGER.info("Zaimportowano %s tankowań do %s", added, d["entry"].title)
-        return {"imported": added, "total": len(d["data"].fuelings)}
+        _LOGGER.info(
+            "Zaimportowano %s tankowań i %s kosztów do %s",
+            added, added_exp, d["entry"].title,
+        )
+        return {
+            "imported": added,
+            "imported_expenses": added_exp,
+            "total": len(d["data"].fuelings),
+            "total_expenses": len(d["data"].expenses),
+        }
 
     async def handle_export(call: ServiceCall) -> ServiceResponse:
         d = _resolve_entry(hass, call.data.get("vehicle"))

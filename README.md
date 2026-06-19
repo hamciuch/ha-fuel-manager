@@ -142,7 +142,13 @@ wrzucony dodatkiem File editor / Samba / Studio Code Server), z `/config/www`
 (czyli `/local/...`) oraz z `/media` (na HAOS możesz go wgrać wprost z panelu
 *Media*, nawet z telefonu, i podać `file_path: /media/car5.csv`). Inne lokalizacje
 wymagają wpisu w `allowlist_external_dirs`. Możesz też pominąć plik i wkleić całą
-zawartość CSV w polu `content`. Import jest idempotentny (po GUID).
+zawartość CSV w polu `content`. Import jest idempotentny (po GUID, z dodatkowym
+zabezpieczeniem po dacie+przebiegu+litrach) – ponowne wczytanie tego samego pliku
+nie tworzy duplikatów, doda tylko nowe wpisy.
+
+Importowane są jednocześnie **tankowania** (sekcja `## Log`) oraz **koszty
+dodatkowe** (sekcje `## Costs` + `## CostCategories` – z kategorią, kwotą, datą,
+przebiegiem i opisem; szablony i przychody są pomijane).
 
 ## ⛽ Kody rodzaju paliwa (Fuelio)
 
@@ -163,7 +169,8 @@ Nieznane kody są zachowywane i wyświetlane jako „Paliwo &lt;kod&gt;”.
 
 ## ⚠️ Uwagi
 
-- Sekcje `## Costs` z Fuelio nie są importowane (integracja dotyczy paliwa).
+- Sekcje `## Costs` i `## CostCategories` z Fuelio są importowane jako koszty
+  dodatkowe (zakładka „Koszty dodatkowe”).
 - Overpass to publiczny endpoint OSM (fair-use); można go wyłączyć w opcjach.
 
 ## Ikona i wersje w HACS

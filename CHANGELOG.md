@@ -22,6 +22,21 @@ wersjonowanie [SemVer](https://semver.org/lang/pl/).
 - Stałe `entity_id` sensorów analizy i kosztów (np. `sensor.<auto>_analiza`),
   niezależne od obszaru urządzenia.
 
+## [1.4.1] – 2026-06-19
+
+### Dodane
+- **Import kosztów z Fuelio.** `import_fuelio` czyta teraz także sekcje `## Costs`
+  i `## CostCategories` i zapisuje je jako koszty dodatkowe (kategoria z mapy
+  `CostTypeID → nazwa`, kwota, data, przebieg, opis = tytuł + notatka). Szablony
+  (`isTemplate`) i przychody (`isIncome`) są pomijane. Odpowiedź serwisu zawiera
+  `imported_expenses` i `total_expenses`.
+
+### Zmienione
+- **Twardszy dedup importu.** Tankowania odsiewane nie tylko po GUID, ale też po
+  sygnaturze (data+przebieg+litry), a koszty po GUID – ponowny import tego samego
+  pliku nie tworzy duplikatów, doda jedynie nowe wpisy.
+- README: zaktualizowany opis importu (tankowania + koszty, idempotentność).
+
 ## [1.3.2] – 2026-06-19
 
 ### Naprawione

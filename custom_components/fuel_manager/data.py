@@ -110,18 +110,45 @@ class FuelData:
         return False
 
     async def async_import(self, new_fuelings: list[dict[str, Any]]) -> int:
-        """Import z deduplikacją po id (guid Fuelio)."""
+        """Import z deduplikacją po id (guid Fuelio) oraz po sygnaturze
+        (data+przebieg+litry) – chroni przed duplikatami także gdy brak guid."""
         existing = {f["id"] for f in self.fuelings}
+
+        def _sig(f: dict[str, Any]) -> tuple:
+            return (
+                (f.get("timestamp") or "")[:16],
+                round(f.get("odometer") or 0.0, 1),
+                round(f.get("fuel") or 0.0, 2),
+            )
+
+        existing_sig = {_sig(f) for f in self.fuelings}
         added = 0
         for f in new_fuelings:
-            if f.get("id") in existing:
+            if f.get("id") in existing or _sig(f) in existing_sig:
                 continue
             self._fill_derived(f)
             self.fuelings.append(f)
             existing.add(f["id"])
+            existing_sig.add(_sig(f))
             added += 1
         self._sort()
         self._recalc_consumption()
+        await self.async_save()
+        return added
+
+    async def async_import_expenses(self, new_expenses: list[dict[str, Any]]) -> int:
+        """Import kosztów dodatkowych z deduplikacją po id (guid Fuelio)."""
+        existing = {e["id"] for e in self.expenses}
+        added = 0
+        for e in new_expenses:
+            if not e.get("id"):
+                e["id"] = str(uuid.uuid4())
+            if e["id"] in existing:
+                continue
+            self.expenses.append(e)
+            existing.add(e["id"])
+            added += 1
+        self._sort()
         await self.async_save()
         return added
 
