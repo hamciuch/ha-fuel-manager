@@ -34,6 +34,8 @@ wersjonowanie [SemVer](https://semver.org/lang/pl/).
   `Błąd konfiguracji` (`value.chart_type is none of line/scatter/pie/donut/radialBar`).
   Usunięto nieprawidłowe `chart_type: bar` na poziomie karty – słupki realizuje już
   `type: column` na serii (poprawny sposób w apexcharts-card).
+- **Panel:** karta „Koszty dodatkowe / rok" zgłaszała `value.series[0].color is not
+  a string` – usunięto `color: null` (kolor dobiera motyw).
 
 ## [1.3.1] – 2026-06-18
 

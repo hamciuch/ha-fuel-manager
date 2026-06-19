@@ -558,7 +558,6 @@ views:
       name: Koszty dodatkowe / rok
       type: column
       unit: ' zł'
-      color: null
       data_generator: return Object.entries(entity.attributes.by_year || {}).map(([y,v]) => [new Date(parseInt(y),0,1).getTime(), v]);
     apex_config:
       xaxis:
