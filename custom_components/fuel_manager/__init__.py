@@ -430,6 +430,7 @@ def _register_services(hass: HomeAssistant) -> None:
             raise HomeAssistantError(f"Nie znaleziono kosztu id={call.data['id']}")
         _notify_update(hass, d["entry"].entry_id)
 
+    async def handle_import(call: ServiceCall) -> ServiceResponse:
         d = _resolve_entry(hass, call.data.get("vehicle"))
         content = call.data.get("content")
         if content is None:

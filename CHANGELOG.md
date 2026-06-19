@@ -22,6 +22,15 @@ wersjonowanie [SemVer](https://semver.org/lang/pl/).
 - Stałe `entity_id` sensorów analizy i kosztów (np. `sensor.<auto>_analiza`),
   niezależne od obszaru urządzenia.
 
+## [1.3.2] – 2026-06-19
+
+### Naprawione
+- Integracja nie wczytywała się (`NameError: name 'handle_import' is not defined`
+  podczas `async_setup`). Ciało handlera importu Fuelio było przyklejone do
+  `handle_delete_expense` bez własnej definicji funkcji – przywrócono nagłówek
+  `async def handle_import(...)`, dzięki czemu serwis `import_fuelio` rejestruje
+  się poprawnie, a `delete_expense` ma znów właściwe ciało.
+
 ## [1.3.1] – 2026-06-18
 
 ### Naprawione
