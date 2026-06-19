@@ -22,6 +22,19 @@ wersjonowanie [SemVer](https://semver.org/lang/pl/).
 - Stałe `entity_id` sensorów analizy i kosztów (np. `sensor.<auto>_analiza`),
   niezależne od obszaru urządzenia.
 
+## [1.4.2] – 2026-06-19
+
+### Naprawione
+- **Deduplikacja importu** nie uwzględnia już czasu ani stacji – sygnatura to
+  **przebieg + litry + kwota**. Wcześniej tankowanie dodane ręcznie w HA i to samo
+  zaimportowane z Fuelio (inny czas/stacja/id) tworzyło duplikat. Teraz takie wpisy
+  są rozpoznawane jako jeden.
+
+### Dodane
+- Serwis **`fuel_manager.dedupe_fuelings`** – usuwa już istniejące duplikaty
+  (ten sam przebieg/litry/kwota), zachowując wpis z GUID-em i scalając brakujące
+  pola. Zwraca `removed` i `remaining`.
+
 ## [1.4.1] – 2026-06-19
 
 ### Dodane

@@ -164,7 +164,7 @@ Nieznane kody są zachowywane i wyświetlane jako „Paliwo &lt;kod&gt;”.
 ## 🛠️ Serwisy
 
 `add_fueling`, `edit_fueling`, `delete_fueling`, `import_fuelio`,
-`export_fuelio`, `find_nearby_stations` – formularze widoczne w
+`export_fuelio`, `find_nearby_stations`, `dedupe_fuelings` – formularze widoczne w
 **Narzędzia deweloperskie → Akcje**.
 
 ## ⚠️ Uwagi

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from datetime import datetime
 from typing import Any
@@ -13,6 +14,12 @@ from .const import STORAGE_KEY_TPL, STORAGE_VERSION
 from .stations import build_station_registry, nearest_known
 
 _LOGGER = logging.getLogger(__name__)
+
+_GUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-", re.IGNORECASE)
+
+
+def _looks_like_guid(value: Any) -> bool:
+    return bool(value) and bool(_GUID_RE.match(str(value)))
 
 
 class FuelData:
@@ -109,32 +116,68 @@ class FuelData:
             return True
         return False
 
+    @staticmethod
+    def _sig(f: dict[str, Any]) -> tuple:
+        """Sygnatura tankowania do wykrywania duplikatów – niezależna od czasu,
+        stacji i drobnych różnic ceny. Ten sam przebieg + litry (+ kwota) =
+        to samo tankowanie (np. dodane ręcznie i zaimportowane z Fuelio)."""
+        return (
+            round(f.get("odometer") or 0.0, 1),
+            round(f.get("fuel") or 0.0, 2),
+            round(f.get("total_cost") or 0.0, 2),
+        )
+
     async def async_import(self, new_fuelings: list[dict[str, Any]]) -> int:
         """Import z deduplikacją po id (guid Fuelio) oraz po sygnaturze
-        (data+przebieg+litry) – chroni przed duplikatami także gdy brak guid."""
+        (przebieg+litry+kwota) – chroni przed duplikatami także gdy wpis dodano
+        wcześniej ręcznie (inny id/czas/stacja)."""
         existing = {f["id"] for f in self.fuelings}
-
-        def _sig(f: dict[str, Any]) -> tuple:
-            return (
-                (f.get("timestamp") or "")[:16],
-                round(f.get("odometer") or 0.0, 1),
-                round(f.get("fuel") or 0.0, 2),
-            )
-
-        existing_sig = {_sig(f) for f in self.fuelings}
+        existing_sig = {self._sig(f) for f in self.fuelings}
         added = 0
         for f in new_fuelings:
-            if f.get("id") in existing or _sig(f) in existing_sig:
+            if f.get("id") in existing or self._sig(f) in existing_sig:
                 continue
             self._fill_derived(f)
             self.fuelings.append(f)
             existing.add(f["id"])
-            existing_sig.add(_sig(f))
+            existing_sig.add(self._sig(f))
             added += 1
         self._sort()
         self._recalc_consumption()
         await self.async_save()
         return added
+
+    async def async_dedupe(self) -> int:
+        """Usuwa istniejące duplikaty tankowań (po sygnaturze przebieg+litry+kwota).
+        Zostawia wpis z prawdziwym guid (lub pierwszy), resztę kasuje. Zwraca
+        liczbę usuniętych."""
+        seen: dict[tuple, dict[str, Any]] = {}
+        order: list[dict[str, Any]] = []
+        removed = 0
+        # przejrzyj od najstarszych, żeby zachować stabilny wybór
+        for f in sorted(self.fuelings, key=lambda x: x.get("timestamp") or ""):
+            sig = self._sig(f)
+            if sig not in seen:
+                seen[sig] = f
+                order.append(f)
+                continue
+            # duplikat – wybierz lepszy wpis do zachowania
+            kept = seen[sig]
+            if not _looks_like_guid(kept.get("id")) and _looks_like_guid(f.get("id")):
+                # zamień zachowywany na ten z guid, scal brakujące pola
+                for k, v in kept.items():
+                    if f.get(k) in (None, "", 0) and v not in (None, "", 0):
+                        f[k] = v
+                idx = order.index(kept)
+                order[idx] = f
+                seen[sig] = f
+            removed += 1
+        if removed:
+            self.fuelings = order
+            self._sort()
+            self._recalc_consumption()
+            await self.async_save()
+        return removed
 
     async def async_import_expenses(self, new_expenses: list[dict[str, Any]]) -> int:
         """Import kosztów dodatkowych z deduplikacją po id (guid Fuelio)."""

@@ -276,6 +276,16 @@ rebuild_statistics:
       selector:
         text:
 
+dedupe_fuelings:
+  name: Usuń duplikaty tankowań
+  description: Wykrywa i usuwa zduplikowane tankowania (ten sam przebieg, ilość paliwa i kwota – np. wpis dodany ręcznie i zaimportowany z Fuelio). Zachowuje wpis z GUID-em. Zwraca liczbę usuniętych.
+  fields:
+    vehicle:
+      name: Pojazd
+      required: false
+      selector:
+        text:
+
 add_expense:
   name: Dodaj koszt
   description: Dodaje koszt dodatkowy (przegląd, ubezpieczenie, serwis...) z opisem.

@@ -41,6 +41,7 @@ from .const import (
     SERVICE_FIND_STATIONS,
     SERVICE_IMPORT_FUELIO,
     SERVICE_REBUILD_STATS,
+    SERVICE_DEDUPE,
     SIGNAL_UPDATE,
 )
 from .data import FuelData
@@ -146,6 +147,7 @@ FIND_SCHEMA = vol.Schema(
 )
 
 REBUILD_SCHEMA = vol.Schema({**_VEHICLE})
+DEDUPE_SCHEMA = vol.Schema({**_VEHICLE})
 
 
 # ---- Setup ----------------------------------------------------------------
@@ -545,6 +547,21 @@ def _register_services(hass: HomeAssistant) -> None:
             "points_written": points,
         }
 
+    async def handle_dedupe(call: ServiceCall) -> ServiceResponse:
+        d = _resolve_entry(hass, call.data.get("vehicle"))
+        entry: ConfigEntry = d["entry"]
+        data: FuelData = d["data"]
+        removed = await data.async_dedupe()
+        if removed:
+            _notify_update(hass, entry.entry_id)
+            await _rebuild_stats(hass, d)
+        _LOGGER.info("Usunięto %s duplikatów tankowań w %s", removed, entry.title)
+        return {
+            "vehicle": entry.title,
+            "removed": removed,
+            "remaining": len(data.fuelings),
+        }
+
     hass.services.async_register(
         DOMAIN, SERVICE_ADD_FUELING, handle_add, ADD_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
@@ -567,6 +584,10 @@ def _register_services(hass: HomeAssistant) -> None:
     )
     hass.services.async_register(
         DOMAIN, SERVICE_REBUILD_STATS, handle_rebuild, REBUILD_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_DEDUPE, handle_dedupe, DEDUPE_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(
