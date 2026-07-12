@@ -84,6 +84,7 @@ EDIT_SCHEMA = vol.Schema(
     {
         **_VEHICLE,
         vol.Required("id"): cv.string,
+        vol.Optional("timestamp"): cv.string,
         vol.Optional("odometer"): vol.Coerce(float),
         vol.Optional("fuel"): vol.Coerce(float),
         vol.Optional("price_per_liter"): vol.Coerce(float),

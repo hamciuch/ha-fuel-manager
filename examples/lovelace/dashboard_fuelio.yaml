@@ -126,6 +126,8 @@ cards:
       - type: entities
         title: Wczytane wartości (popraw i zapisz)
         entities:
+          - entity: input_datetime.fuel_edit_datetime
+            name: Data i czas
           - entity: input_number.fuel_edit_odometer
             name: Przebieg (km)
           - entity: input_number.fuel_edit_fuel

@@ -183,6 +183,11 @@ input_datetime:
     has_date: true
     has_time: false
     icon: mdi:calendar
+  fuel_edit_datetime:
+    name: Edycja – data i czas
+    has_date: true
+    has_time: true
+    icon: mdi:calendar-edit
 
 input_text:
   fuel_notes:
@@ -406,6 +411,15 @@ script:
                     {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
                     {% set f = rows | selectattr('id','eq',id) | list | first %}
                     {{ f.station_name if f else '' }}
+              - service: input_datetime.set_datetime
+                target: { entity_id: input_datetime.fuel_edit_datetime }
+                data:
+                  datetime: >
+                    {% set id = states('input_text.fuel_edit_id') %}
+                    {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
+                    {% set f = rows | selectattr('id','eq',id) | list | first %}
+                    {% set ts = f.timestamp if f else '' %}
+                    {{ (as_datetime(ts) if ts else now()).strftime('%Y-%m-%d %H:%M:%S') }}
               - service: >
                   {% set id = states('input_text.fuel_edit_id') %}
                   {% set rows = state_attr('sensor.' ~ (states('input_select.fuel_vehicle')|slugify) ~ '_historia_tankowan','fuelings') or [] %}
@@ -456,6 +470,7 @@ script:
         data:
           vehicle: "{{ states('input_select.fuel_vehicle') }}"
           id: "{{ states('input_text.fuel_edit_id') }}"
+          timestamp: "{{ states('input_datetime.fuel_edit_datetime') | replace(' ', 'T') }}"
           odometer: "{{ states('input_number.fuel_edit_odometer') | float }}"
           fuel: "{{ states('input_number.fuel_edit_fuel') | float }}"
           price_per_liter: "{{ states('input_number.fuel_edit_price') | float }}"

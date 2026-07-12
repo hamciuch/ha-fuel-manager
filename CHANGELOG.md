@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.3] – 2026-06-19
+
+### Dodane
+- **Edycja daty i czasu tankowania.** Przy edycji wpisu można teraz zmienić datę
+  i godzinę (nowy helper `input_datetime.fuel_edit_datetime`, pole „Data i czas"
+  w karcie edycji). `fuel_edit_load` wczytuje oryginalny czas, `fuel_edit_save`
+  przekazuje go do serwisu; `edit_fueling` przyjmuje pole `timestamp`, a zmiana
+  daty przelicza kolejność i spalanie.
+
+### Naprawione
+- **Hassfest:** poprawna kolejność kluczy w `manifest.json` (`domain`, `name`,
+  reszta alfabetycznie) – zielona walidacja CI.
+
 Wszystkie istotne zmiany w projekcie. Format wzorowany na
 [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/),
 wersjonowanie [SemVer](https://semver.org/lang/pl/).
