@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0] – 2026-10-02
+
+### Dodane
+- **Statystyki „na żywo” z encji HA.** W opcjach integracji można wskazać encję
+  licznika auta i encję stanu baku (% lub litry) oraz pojemność baku. Powstaje sensor
+  `sensor.<auto>_biezace_tankowanie` i zakładka „Bieżące” w panelu, licząca:
+  koszt 1 km na obecnym baku, zużyte paliwo i spalanie na tym baku, wydane na tym baku,
+  litry/procent w baku.
+- **Propozycje statystyk:** realny zasięg wg Twojego historycznego spalania (stabilniejszy
+  niż chwiejny zasięg z auta) i zasięg „do rezerwy”, wartość paliwa w baku, szacowane dni do
+  następnego tankowania, koszt 100 km, a także: łącznie przepalone, średni koszt dzienny,
+  prognoza miesięczna i roczna.
+- Opcjonalna encja „dystans dziś” (na przyszłe statystyki).
+
 ## [1.4.3] – 2026-06-19
 
 ### Dodane

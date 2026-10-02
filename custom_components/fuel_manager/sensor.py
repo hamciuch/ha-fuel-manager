@@ -10,11 +10,25 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_track_state_change_event
 
 from homeassistant.util import slugify
 
-from .analytics import compute_analytics, compute_expense_analytics
-from .const import DOMAIN, SIGNAL_UPDATE, fuel_type_name
+from .analytics import compute_analytics, compute_expense_analytics, compute_live_tank
+from .const import (
+    CONF_CURRENCY,
+    CONF_DISTANCE_TODAY_ENTITY,
+    CONF_FUEL_LEVEL_ENTITY,
+    CONF_FUEL_LEVEL_UNIT,
+    CONF_ODOMETER_ENTITY,
+    CONF_TANK_CAPACITY,
+    DEFAULT_CURRENCY,
+    DEFAULT_FUEL_LEVEL_UNIT,
+    DEFAULT_TANK_CAPACITY,
+    DOMAIN,
+    SIGNAL_UPDATE,
+    fuel_type_name,
+)
 from .data import FuelData
 
 
@@ -66,6 +80,7 @@ async def async_setup_entry(
         HistorySensor(entry, data),
         AnalyticsSensor(entry, data),
         ExpensesSensor(entry, data),
+        LiveTankSensor(entry, data),
     ]
     async_add_entities(sensors)
 
@@ -272,3 +287,85 @@ class ExpensesSensor(_Base):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return compute_expense_analytics(self._data.expenses)
+
+
+class LiveTankSensor(_Base):
+    """Statystyki bieżącego baku z encji HA (licznik + stan baku).
+
+    Stan = koszt 1 km przejechanego na obecnym baku (zł/km).
+    Cała reszta (zużycie, wydane, realny zasięg, dni do tankowania itd.) w atrybutach.
+    """
+
+    _attr_icon = "mdi:fuel-cell"
+
+    def __init__(self, entry: ConfigEntry, data: FuelData) -> None:
+        super().__init__(entry, data)
+        self._attr_unique_id = f"{entry.entry_id}_current_tank"
+        self._attr_name = "Bieżące tankowanie"
+        self.entity_id = f"sensor.{slugify(entry.title)}_biezace_tankowanie"
+        self._attr_native_unit_of_measurement = self._opt(CONF_CURRENCY, DEFAULT_CURRENCY) + "/km"
+
+    def _opt(self, key: str, default: Any = None) -> Any:
+        return self._entry.options.get(key, self._entry.data.get(key, default))
+
+    def _tracked_entities(self) -> list[str]:
+        ids = [
+            self._opt(CONF_ODOMETER_ENTITY),
+            self._opt(CONF_FUEL_LEVEL_ENTITY),
+            self._opt(CONF_DISTANCE_TODAY_ENTITY),
+        ]
+        return [e for e in ids if e]
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        tracked = self._tracked_entities()
+        if tracked:
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, tracked, self._on_source_change
+                )
+            )
+
+    @callback
+    def _on_source_change(self, event: Any) -> None:
+        self.async_write_ha_state()
+
+    def _compute(self) -> dict[str, Any]:
+        odo_ent = self._opt(CONF_ODOMETER_ENTITY)
+        fuel_ent = self._opt(CONF_FUEL_LEVEL_ENTITY)
+        unit = self._opt(CONF_FUEL_LEVEL_UNIT, DEFAULT_FUEL_LEVEL_UNIT)
+        capacity = float(self._opt(CONF_TANK_CAPACITY, DEFAULT_TANK_CAPACITY) or 0)
+
+        live_odo = self.hass.states.get(odo_ent).state if odo_ent and self.hass.states.get(odo_ent) else None
+        live_fuel = self.hass.states.get(fuel_ent).state if fuel_ent and self.hass.states.get(fuel_ent) else None
+
+        try:
+            an = compute_analytics(self._data.fuelings)
+        except Exception:  # noqa: BLE001
+            an = {}
+        avg_cons = self._data.stats().get("avg_consumption")
+        return compute_live_tank(
+            self._data.last,
+            live_odo,
+            live_fuel,
+            unit,
+            capacity,
+            avg_cons,
+            an.get("avg_daily_distance"),
+            an.get("avg_daily_cost"),
+            an.get("total_spend"),
+        )
+
+    @property
+    def native_value(self) -> Any:
+        try:
+            return self._compute().get("cost_per_km_tank")
+        except Exception:  # noqa: BLE001
+            return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        try:
+            return self._compute()
+        except Exception:  # noqa: BLE001
+            return {}

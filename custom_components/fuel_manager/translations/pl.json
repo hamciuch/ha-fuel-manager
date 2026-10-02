@@ -31,7 +31,11 @@
           "device_tracker": "Lokalizacja auta (opcjonalny zapas)",
           "station_radius": "Promień snapowania do znanej stacji (m)",
           "use_overpass": "Szukaj stacji w OpenStreetMap",
-          "phone_tracker": "Lokalizacja telefonu (osoba/urządzenie) – główne źródło"
+          "phone_tracker": "Lokalizacja telefonu (osoba/urządzenie) – główne źródło",
+          "odometer_entity": "Encja licznika auta (aktualny przebieg, km)",
+          "fuel_level_entity": "Encja stanu baku (% lub litry)",
+          "fuel_level_unit": "Jednostka stanu baku",
+          "distance_today_entity": "Encja dystansu dziś (opcjonalnie, km)"
         }
       }
     }

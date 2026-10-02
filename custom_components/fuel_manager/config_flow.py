@@ -18,6 +18,10 @@ from .const import (
     CONF_CURRENCY,
     CONF_DEFAULT_FUEL_TYPE,
     CONF_DEVICE_TRACKER,
+    CONF_DISTANCE_TODAY_ENTITY,
+    CONF_FUEL_LEVEL_ENTITY,
+    CONF_FUEL_LEVEL_UNIT,
+    CONF_ODOMETER_ENTITY,
     CONF_PHONE_TRACKER,
     CONF_STATION_RADIUS,
     CONF_TANK_CAPACITY,
@@ -25,6 +29,7 @@ from .const import (
     DEFAULT_CURRENCY,
     DEFAULT_FUEL_TYPE,
     DEFAULT_NAME,
+    DEFAULT_FUEL_LEVEL_UNIT,
     DEFAULT_STATION_RADIUS,
     DEFAULT_TANK_CAPACITY,
     DOMAIN,
@@ -151,6 +156,37 @@ class FuelManagerOptionsFlow(OptionsFlow):
                 vol.Optional(
                     CONF_USE_OVERPASS, default=o.get(CONF_USE_OVERPASS, True)
                 ): bool,
+                # --- Encje "na żywo" do statystyk bieżącego baku ---
+                vol.Optional(
+                    CONF_ODOMETER_ENTITY,
+                    description={"suggested_value": o.get(CONF_ODOMETER_ENTITY)},
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="sensor")
+                ),
+                vol.Optional(
+                    CONF_FUEL_LEVEL_ENTITY,
+                    description={"suggested_value": o.get(CONF_FUEL_LEVEL_ENTITY)},
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="sensor")
+                ),
+                vol.Optional(
+                    CONF_FUEL_LEVEL_UNIT,
+                    default=o.get(CONF_FUEL_LEVEL_UNIT, DEFAULT_FUEL_LEVEL_UNIT),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[
+                            selector.SelectOptionDict(value="percent", label="Procent (%)"),
+                            selector.SelectOptionDict(value="liters", label="Litry (L)"),
+                        ],
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                vol.Optional(
+                    CONF_DISTANCE_TODAY_ENTITY,
+                    description={"suggested_value": o.get(CONF_DISTANCE_TODAY_ENTITY)},
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="sensor")
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

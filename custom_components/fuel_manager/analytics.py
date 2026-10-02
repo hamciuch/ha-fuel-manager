@@ -223,3 +223,114 @@ def compute_expense_analytics(expenses: list[dict[str, Any]]) -> dict[str, Any]:
         "by_year": {str(k): _r(v) for k, v in sorted(by_year.items())},
         "items": items,
     }
+
+
+def _num(x: Any) -> float | None:
+    """Zamień stan encji na liczbę (ignoruje 'unknown'/'unavailable'/None)."""
+    if x is None:
+        return None
+    try:
+        s = str(x).replace(",", ".").strip()
+        if s in ("", "unknown", "unavailable", "none"):
+            return None
+        return float(s)
+    except (TypeError, ValueError):
+        return None
+
+
+def compute_live_tank(
+    last: dict[str, Any] | None,
+    live_odo: Any,
+    live_fuel_raw: Any,
+    unit: str,
+    capacity: float,
+    avg_consumption: float | None,
+    avg_daily_distance: float | None,
+    avg_daily_cost: float | None,
+    total_spend: float | None = None,
+) -> dict[str, Any]:
+    """Statystyki bieżącego baku z encji HA (licznik + stan baku) i ostatniego
+    tankowania. Zwraca komplet w atrybutach; brakujące dane -> None (nie rzuca)."""
+    out: dict[str, Any] = {
+        "ok": False,
+        "reason": None,
+        # bieżący bak
+        "fuel_remaining_l": None,
+        "fuel_remaining_pct": None,
+        "distance_tank": None,
+        "fuel_used_tank": None,
+        "consumption_tank": None,
+        "cost_per_km_tank": None,
+        "spent_tank": None,
+        # propozycje
+        "range_remaining": None,
+        "range_remaining_optimistic": None,
+        "value_remaining_fuel": None,
+        "days_to_refuel": None,
+        "cost_per_100km_tank": None,
+        "cost_per_100km_typical": None,
+        # szacunki długoterminowe
+        "projected_monthly_cost": None,
+        "projected_yearly_cost": None,
+        "avg_daily_cost": _r(avg_daily_cost) if avg_daily_cost else None,
+        "total_spend": _r(total_spend) if total_spend else None,
+    }
+
+    cap = capacity or 0
+    odo = _num(live_odo)
+    raw = _num(live_fuel_raw)
+
+    # litry i procent w baku
+    cur_l = cur_pct = None
+    if raw is not None:
+        if unit == "liters":
+            cur_l = max(0.0, raw)
+            cur_pct = (cur_l / cap * 100) if cap else None
+        else:  # percent
+            cur_pct = max(0.0, min(100.0, raw))
+            cur_l = (cur_pct / 100 * cap) if cap else None
+    out["fuel_remaining_l"] = _r(cur_l) if cur_l is not None else None
+    out["fuel_remaining_pct"] = _r(cur_pct, 0) if cur_pct is not None else None
+
+    price = (last or {}).get("price_per_liter")
+
+    # realny zasięg wg historycznego spalania (stabilniejszy niż z auta)
+    if cur_l is not None and avg_consumption:
+        out["range_remaining"] = _r(cur_l / avg_consumption * 100, 0)
+        # „do sucha” zostawiając ~4 L rezerwy
+        usable = max(0.0, cur_l - 4.0)
+        out["range_remaining_optimistic"] = _r(usable / avg_consumption * 100, 0)
+    if cur_l is not None and price:
+        out["value_remaining_fuel"] = _r(cur_l * price)
+    if out["range_remaining"] and avg_daily_distance:
+        out["days_to_refuel"] = _r(out["range_remaining"] / avg_daily_distance, 1)
+    if avg_consumption and price:
+        out["cost_per_100km_typical"] = _r(avg_consumption * price)
+    if avg_daily_cost:
+        out["projected_monthly_cost"] = _r(avg_daily_cost * 30)
+        out["projected_yearly_cost"] = _r(avg_daily_cost * 365)
+
+    # koszt/km i zużycie NA TYM BAKU (metoda z poziomu paliwa)
+    if last and odo is not None and cur_l is not None and cap:
+        o0 = last.get("odometer")
+        dist = (odo - o0) if (o0 is not None) else None
+        liters_after = cap  # zakładamy pełny bak po ostatnim tankowaniu
+        used = liters_after - cur_l
+        if dist and dist > 0 and used is not None and used >= 0:
+            out["distance_tank"] = _r(dist, 0)
+            out["fuel_used_tank"] = _r(used)
+            cons = used / dist * 100
+            out["consumption_tank"] = _r(cons)
+            if price:
+                out["cost_per_km_tank"] = _r(used * price / dist, 3)
+                out["spent_tank"] = _r(used * price)
+                out["cost_per_100km_tank"] = _r(cons * price)
+            out["ok"] = True
+        elif dist is not None and dist <= 0:
+            out["reason"] = "licznik nie wyprzedza ostatniego tankowania"
+        else:
+            out["reason"] = "brak kompletu danych (licznik/bak/cena)"
+    else:
+        out["reason"] = "ustaw encje licznika i stanu baku oraz pojemność baku"
+
+    return out

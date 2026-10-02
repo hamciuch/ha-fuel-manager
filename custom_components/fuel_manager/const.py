@@ -16,11 +16,17 @@ CONF_PHONE_TRACKER = "phone_tracker"  # lokalizacja TELEFONU (główne źródło
 CONF_DEFAULT_FUEL_TYPE = "default_fuel_type"
 CONF_STATION_RADIUS = "station_radius"
 CONF_USE_OVERPASS = "use_overpass"
+# Encje "na żywo" z HA do statystyk bieżącego baku
+CONF_ODOMETER_ENTITY = "odometer_entity"  # aktualny licznik auta (km)
+CONF_FUEL_LEVEL_ENTITY = "fuel_level_entity"  # stan baku (% lub litry)
+CONF_FUEL_LEVEL_UNIT = "fuel_level_unit"  # "percent" | "liters"
+CONF_DISTANCE_TODAY_ENTITY = "distance_today_entity"  # opcjonalnie: dystans dziś (km)
 
 DEFAULT_NAME = "Samochód"
 DEFAULT_CURRENCY = "zł"
 DEFAULT_TANK_CAPACITY = 55.0
 DEFAULT_FUEL_TYPE = 110
+DEFAULT_FUEL_LEVEL_UNIT = "percent"
 DEFAULT_STATION_RADIUS = 300  # metry – snap do znanej stacji
 DEFAULT_OVERPASS_RADIUS = 1500  # metry – wyszukiwanie nowych stacji w OSM
 

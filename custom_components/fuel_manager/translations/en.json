@@ -31,7 +31,11 @@
           "device_tracker": "Car location (optional fallback)",
           "station_radius": "Snap-to-known-station radius (m)",
           "use_overpass": "Search stations in OpenStreetMap",
-          "phone_tracker": "Phone location (person/device) – primary source"
+          "phone_tracker": "Phone location (person/device) – primary source",
+          "odometer_entity": "Odometer entity (current mileage, km)",
+          "fuel_level_entity": "Fuel level entity (% or liters)",
+          "fuel_level_unit": "Fuel level unit",
+          "distance_today_entity": "Distance today entity (optional, km)"
         }
       }
     }
