@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.1] – 2026-11-15
+
+### Zmienione
+- Atrybut `monthly` sensora analizy obejmuje teraz całą historię – od miesiąca pierwszego
+  tankowania do bieżącego, bez limitu (min. 14 mies.) – zamiast stałych 14 miesięcy.
+  Pozwala to porównać na wykresie każdy miesiąc rok do roku. Istniejące wykresy
+  14-miesięczne działają bez zmian.
+
 ## [1.5.0] – 2026-10-02
 
 ### Dodane

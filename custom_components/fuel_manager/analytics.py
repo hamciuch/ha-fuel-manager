@@ -117,9 +117,13 @@ def compute_analytics(fuelings: list[dict[str, Any]]) -> dict[str, Any]:
         if dt and d > 0:
             m_dist[f"{dt.year}-{dt.month:02d}"] += d
 
-    # ostatnie 14 miesięcy (do porównań rok do roku)
+    # cała historia: od miesiąca pierwszego tankowania do bieżącego (bez limitu,
+    # min. 14 mies. dla wykresów 14-miesięcznych) - do porównań rok do roku
     seq: list[tuple[int, int]] = []
-    for k in range(13, -1, -1):
+    span = 14
+    if dates:
+        span = max(span, (now.year - dates[0].year) * 12 + now.month - dates[0].month + 1)
+    for k in range(span - 1, -1, -1):
         yy, mm = now.year, now.month - k
         while mm <= 0:
             mm += 12
